@@ -1,8 +1,8 @@
-# Release automation v1 documentation
+# Release automation documentation
 
-These documents describe the v1 consumer contract. Use the documents at the
-same commit as your workflow pins; the directory name is not an installation
-ref.
+These documents describe the consumer contract at this repository revision.
+Read them at the same commit as your workflow pins so the guidance matches
+the implementation you use.
 
 ## Install and operate
 
@@ -24,6 +24,6 @@ ref.
 
 ## Develop the toolkit
 
-See [contribution instructions](../../CONTRIBUTING.md) and
-[toolkit maintenance](../../MAINTAINERS.md) for repository development and
+See [contribution instructions](../CONTRIBUTING.md) and
+[toolkit maintenance](../MAINTAINERS.md) for repository development and
 immutable payload pin updates.

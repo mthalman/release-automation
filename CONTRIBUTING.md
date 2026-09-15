@@ -1,8 +1,8 @@
 # Contributing
 
 Contributions should keep release drafting predictable, reviewable, and separate
-from publication. Start with the [v1 workflow contract](docs/v1/workflows.md)
-and [local development guide](docs/v1/local-development.md).
+from publication. Start with the [workflow contract](docs/workflows.md)
+and [local development guide](docs/local-development.md).
 
 ## Before changing behavior
 
@@ -22,13 +22,13 @@ decision rather than an incidental implementation.
 
 1. Create a branch from the repository's default branch.
 2. Set up Python 3.13 and the pinned toolkit dependencies using the
-   [local setup instructions](docs/v1/local-development.md#set-up-python).
+   [local setup instructions](docs/local-development.md#set-up-python).
 3. Add or update focused tests alongside behavior changes. Include negative
    cases for validation, trusted Git-object reads, and fail-closed readiness
    behavior where relevant.
 4. Run `python -m unittest discover -s tests -q`. For workflow changes, also run
    `actionlint` if installed.
-5. Update the related `docs/v1` guide or reference when behavior, examples, or
+5. Update the related `docs` guide or reference when behavior, examples, or
    supported inputs change.
 
 Use synthetic repositories and event data in tests. Do not add real consumer
@@ -61,4 +61,4 @@ with the proposed toolkit and runs an archive of P; it needs that history.
 By submitting a contribution, you agree that it is provided under this
 repository's [MIT license](LICENSE). Preserve the original
 `Copyright (c) 2020 Matt Thalman` notice and any applicable upstream attribution.
-See [provenance](docs/v1/provenance.md) for the extraction baseline.
+See [provenance](docs/provenance.md) for the extraction baseline.

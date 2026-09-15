@@ -2,7 +2,7 @@
 
 This document is for maintainers of `mthalman/release-automation`. Maintainers
 of repositories that consume it should use the
-[consumer maintainer guide](docs/v1/maintainer-guide.md).
+[consumer maintainer guide](docs/maintainer-guide.md).
 
 ## Review responsibilities
 
@@ -24,7 +24,7 @@ Before accepting a change:
   fresh remote/release checks. No waiting path may rewrite an existing draft.
 - Preserve fragment and published-guide retention, including reviewed
   corrections and references from all release bodies.
-- Update versioned docs and identify any compatibility changes.
+- Update documentation and identify any compatibility changes.
 
 Write maintained guides as procedures and contracts that apply to future
 installations and upgrades. Keep PR-specific test results, setup status, and
@@ -108,7 +108,7 @@ Keep the module's Go version supported, review new lint findings, and resolve
 build incompatibilities before merging an update.
 
 Consumers upgrade both workflow references together in a reviewed pull
-request. Keep the v1 documentation at the upgrade commit consistent with the
+request. Keep the documentation at the upgrade commit consistent with the
 wrappers and payload. No PyPI release or installer publication is needed.
 
 ## Enable self-dogfooding
@@ -137,7 +137,7 @@ When enabling self-dogfooding, or verifying it after an upgrade:
 
 1. Enable the required Actions policies and **Allow GitHub Actions to create
    and approve pull requests**, as described in
-   [installation](docs/v1/installation.md#2-enable-repository-permissions).
+   [installation](docs/installation.md#2-enable-repository-permissions).
 2. Confirm the configured labels exist (the default names for this repository's
    default setup) and that the draft caller targets the repository's actual
    default branch. This repository's Dependabot label settings are static;
@@ -167,6 +167,6 @@ topics for new output. Explain migrations for any future incompatible
 configuration schema; reject unsupported versions rather than guessing.
 
 The original extraction baseline and intentionally excluded product concerns
-are recorded in [provenance](docs/v1/provenance.md). Keep the original MIT
+are recorded in [provenance](docs/provenance.md). Keep the original MIT
 copyright notice. Do not transplant source-product contributor instructions
 or publication credentials into this repository.

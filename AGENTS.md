@@ -1,7 +1,7 @@
 # Agent instructions
 
 Read [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md), and the relevant
-[v1 documentation](docs/v1/README.md) before changing behavior.
+[documentation](docs/README.md) before changing behavior.
 
 ## Repository boundaries
 

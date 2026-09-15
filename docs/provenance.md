@@ -4,7 +4,7 @@ This document records the toolkit's extraction history, not its current
 dependency versions or deployment status. The source is
 [mthalman/docker-creds-provider](https://github.com/mthalman/docker-creds-provider),
 Matt Thalman's MIT-licensed implementation. The toolkit retains the original
-`Copyright (c) 2020 Matt Thalman` notice in [LICENSE](../../LICENSE).
+`Copyright (c) 2020 Matt Thalman` notice in [LICENSE](../LICENSE).
 
 ## Extraction baseline
 
@@ -30,13 +30,13 @@ also included
 generated content and a Python 3.14 dependency bump.
 That later snapshot did not add further algorithm fixes to extract. This
 extraction retained Python 3.13 rather than inheriting that bump. Consult the
-[workflow definitions](../../.github/workflows) at the selected toolkit commit
+[workflow definitions](../.github/workflows) at the selected toolkit commit
 for its runtime versions.
 
 ## Baseline regression evidence
 
-The [baseline test](../../tests/test_baseline.py) compares the toolkit's output
-with [a golden fixture](../../tests/fixtures/pr108-output.json) captured from
+The [baseline test](../tests/test_baseline.py) compares the toolkit's output
+with [a golden fixture](../tests/fixtures/pr108-output.json) captured from
 the actual implementation at the selected baseline. The comparison
 checks exact text for rendered notes, versioned documents and state, indexes,
 and the unified release body. Its code-fence example preserves a literal

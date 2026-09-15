@@ -1,6 +1,6 @@
 # Reusable workflow contract
 
-This reference describes v1's two entrypoints and their trust boundaries.
+This reference describes the two reusable entrypoints and their trust boundaries.
 For copyable callers, see [installation](installation.md).
 
 ## Entrypoints and inputs
@@ -28,14 +28,14 @@ The workflow does not dynamically infer a second source ref from the caller.
 Toolkit PRs introducing payload pins preserve P as an ancestor of W by using a
 merge commit rather than squash or rebase. CI compares the pinned toolkit tree
 with the proposed files and runs an archive of P from full history. See
-[payload retention](../../MAINTAINERS.md#update-the-immutable-payload-pins);
+[payload retention](../MAINTAINERS.md#update-the-immutable-payload-pins);
 separate retention branches or tags require an explicit maintenance decision.
 
 External action dependencies are also SHA-pinned. The
-[workflow definitions](../../.github/workflows) and
-[dependency lock](../../toolkit/requirements.txt) identify the runtime and
+[workflow definitions](../.github/workflows) and
+[dependency lock](../toolkit/requirements.txt) identify the runtime and
 dependency versions for each toolkit commit. See the
-[pinning procedure](../../MAINTAINERS.md#update-the-immutable-payload-pins).
+[pinning procedure](../MAINTAINERS.md#update-the-immutable-payload-pins).
 
 For self-dogfooding, this toolkit repository calls its reusable workflows using
 `./.github/workflows/migration-policy.yml` and
@@ -43,7 +43,7 @@ For self-dogfooding, this toolkit repository calls its reusable workflows using
 the caller's commit, while its wrapper still uses literal payload P. This
 same-repository arrangement does not change the external consumer pinning
 contract. Activation and live verification require deployment and repository setup;
-see [self-dogfooding setup](../../MAINTAINERS.md#enable-self-dogfooding).
+see [self-dogfooding setup](../MAINTAINERS.md#enable-self-dogfooding).
 
 ## Migration policy
 

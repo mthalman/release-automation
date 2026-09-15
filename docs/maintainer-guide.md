@@ -2,7 +2,7 @@
 
 This guide covers the human steps between a merged product change and a
 reviewed draft release. For maintenance of the toolkit itself, see
-[MAINTAINERS.md](../../MAINTAINERS.md).
+[MAINTAINERS.md](../MAINTAINERS.md).
 
 ## Review incoming product changes
 

@@ -13,10 +13,10 @@ credentials, and the final publication gate.
 
 ## Start here
 
-1. Follow [installation](docs/v1/installation.md) to add two small caller
+1. Follow [installation](docs/installation.md) to add two small caller
    workflows, create labels, and configure repository permissions.
-2. Share the [author guide](docs/v1/author-guide.md) with contributors.
-3. Use the [consumer maintainer guide](docs/v1/maintainer-guide.md) to review
+2. Share the [author guide](docs/author-guide.md) with contributors.
+3. Use the [consumer maintainer guide](docs/maintainer-guide.md) to review
    generated guides and prepare a release.
 
 Installation examples contain
@@ -47,7 +47,7 @@ If documentation changes are needed, the run fails at the readiness step and
 leaves an existing release draft unchanged. It does not stay running while
 review is pending. If the selected commit already contains the exact required
 files, no documentation PR or additional review cycle is needed. See the
-[workflow contract](docs/v1/workflows.md) for ordering, trust boundaries, and
+[workflow contract](docs/workflows.md) for ordering, trust boundaries, and
 race limitations.
 
 ## Supported scope
@@ -57,7 +57,7 @@ race limitations.
 - Stable tags in the exact form `vMAJOR.MINOR.PATCH`, such as `v2.4.0`.
   Release names contain only the version, such as `2.4.0`.
 - Pinned Python and Towncrier tooling, with SHA-pinned Release Drafter and
-  create-pull-request workflows. See the [runtime setup](docs/v1/local-development.md#set-up-python),
+  create-pull-request workflows. See the [runtime setup](docs/local-development.md#set-up-python),
   [dependency lock](toolkit/requirements.txt), and
   [workflow definitions](.github/workflows) for versions at your selected commit.
 - Optional, versioned JSON configuration for paths, labels, and category titles.
@@ -67,26 +67,26 @@ race limitations.
 
 Monorepo version streams, prereleases, arbitrary tag prefixes, GitHub Enterprise
 hosts, executable consumer configuration, and automatic migration of consumers'
-existing release pipelines are outside v1's scope. There is no PyPI package or
+existing release pipelines are outside the supported scope. There is no PyPI package or
 installer to deploy.
 
 ## Documentation
 
 | Document | Purpose |
 | --- | --- |
-| [v1 documentation index](docs/v1/README.md) | Find the guide for your role |
-| [Installation](docs/v1/installation.md) | Install pinned caller workflows |
-| [Author guide](docs/v1/author-guide.md) | Label changes and write migration fragments |
-| [Fragment template](docs/v1/fragment-template.md) | Copy a complete example and adapt it |
-| [Consumer maintainer guide](docs/v1/maintainer-guide.md) | Review guides, rerun safely, and prepare publication |
-| [Configuration reference](docs/v1/configuration.md) | Supported JSON settings and validation rules |
-| [Workflow contract](docs/v1/workflows.md) | Inputs, permissions, sequencing, and trust |
-| [Local development](docs/v1/local-development.md) | Preview committed fragments and run tests |
-| [Provenance](docs/v1/provenance.md) | Source baseline and extraction boundaries |
+| [Documentation index](docs/README.md) | Find the guide for your role |
+| [Installation](docs/installation.md) | Install pinned caller workflows |
+| [Author guide](docs/author-guide.md) | Label changes and write migration fragments |
+| [Fragment template](docs/fragment-template.md) | Copy a complete example and adapt it |
+| [Consumer maintainer guide](docs/maintainer-guide.md) | Review guides, rerun safely, and prepare publication |
+| [Configuration reference](docs/configuration.md) | Supported JSON settings and validation rules |
+| [Workflow contract](docs/workflows.md) | Inputs, permissions, sequencing, and trust |
+| [Local development](docs/local-development.md) | Preview committed fragments and run tests |
+| [Provenance](docs/provenance.md) | Source baseline and extraction boundaries |
 
-The `v1` documentation directory describes the compatibility contract; it is not
-a mutable workflow pin. Read documentation at the same commit as your workflow
-pins when diagnosing behavior.
+Git versions the documentation alongside the implementation. Read documentation
+at the same commit as your workflow pins when installing, upgrading, or
+diagnosing behavior.
 
 ## Contribute and maintain
 
