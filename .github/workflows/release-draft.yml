@@ -1,0 +1,183 @@
+name: Shared release draft
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: Optional version 1 JSON configuration, read from the selected default-branch commit
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-drafter
+  cancel-in-progress: false
+
+jobs:
+  update-release-draft:
+    name: Prepare guides and update draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CONFIG_PATH: ${{ inputs.config-path }}
+    steps:
+      - name: Select repository default branch
+        id: repository
+        env:
+          SERVER_URL: ${{ github.server_url }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          test "$SERVER_URL" = https://github.com
+          [[ "$EVENT_NAME" = push || "$EVENT_NAME" = workflow_dispatch ]]
+          branch="$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout trusted toolkit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: mthalman/release-automation
+          ref: f33955bc99fdaed5eaddc656a1fafc4211e69433
+          path: _release-automation
+          persist-credentials: false
+
+      - name: Checkout latest default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ steps.repository.outputs.branch }}
+          path: consumer
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Create isolated tooling environment
+        run: |
+          python -I -m venv "$RUNNER_TEMP/release-automation-venv"
+          "$RUNNER_TEMP/release-automation-venv/bin/python" -I -m pip install \
+            --disable-pip-version-check -r "$GITHUB_WORKSPACE/_release-automation/toolkit/requirements.txt"
+
+      - name: Freeze commit and Release Drafter configuration
+        id: configuration
+        env:
+          DEFAULT_BRANCH: ${{ steps.repository.outputs.branch }}
+        run: |
+          "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" configuration \
+            --repo "$GITHUB_WORKSPACE/consumer" --head HEAD \
+            --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
+            --output "$RUNNER_TEMP/release-drafter.json"
+
+      - name: Snapshot releases
+        env:
+          DEFAULT_BRANCH: ${{ steps.repository.outputs.branch }}
+          SELECTED_SHA: ${{ steps.configuration.outputs.sha }}
+        run: |
+          "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" snapshot \
+            --repo "$GITHUB_WORKSPACE/consumer" --head "$SELECTED_SHA" \
+            --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
+            --snapshot "$RUNNER_TEMP/releases.json"
+
+      - name: Preview release boundary
+        id: preview
+        uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+        with:
+          config-name: file:${{ steps.configuration.outputs.config-file }}
+          dry-run: true
+          publish: false
+          commitish: ${{ steps.configuration.outputs.sha }}
+          header: |
+            <!-- migration-base: $PREVIOUS_TAG -->
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare versioned migration guides
+        id: guides
+        env:
+          DEFAULT_BRANCH: ${{ steps.repository.outputs.branch }}
+          SELECTED_SHA: ${{ steps.configuration.outputs.sha }}
+          RELEASE_PREVIEW: ${{ steps.preview.outputs.body }}
+          RELEASE_NAME: ${{ steps.preview.outputs.name }}
+          RELEASE_TAG: ${{ steps.preview.outputs.tag_name }}
+        run: |
+          "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" prepare \
+            --repo "$GITHUB_WORKSPACE/consumer" --head "$SELECTED_SHA" \
+            --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
+            --snapshot "$RUNNER_TEMP/releases.json"
+
+      - name: Open documentation pull request
+        id: docs-pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          path: consumer
+          branch: ${{ steps.configuration.outputs.automation-branch }}
+          base: ${{ steps.repository.outputs.branch }}
+          delete-branch: true
+          draft: always-true
+          title: Prepare versioned migration guides
+          commit-message: Prepare versioned migration guides
+          add-paths: |
+            ${{ steps.configuration.outputs.guide-root }}/
+            ${{ steps.guides.outputs.add-state-path }}
+          labels: |
+            ${{ steps.configuration.outputs.patch-label }}
+            ${{ steps.configuration.outputs.documentation-label }}
+          body: |
+            ## Summary
+
+            Prepare versioned migration topics and reader indexes. Retain published
+            guides and reviewed corrections; remove only unlinked unpublished pending
+            versions. Edit source fragments for unpublished corrections and rerun the
+            release workflow, rather than editing this generated branch independently.
+
+            ## Review
+
+            A human must mark this PR ready for review to start CI. Automated updates
+            return it to draft. Review and merge, then rerun the release workflow if
+            it did not run automatically. The existing release draft is unchanged
+            until these exact guides are committed on the default branch.
+
+      - name: Verify documentation pull request
+        if: steps.docs-pr.outputs.pull-request-number != ''
+        env:
+          DEFAULT_BRANCH: ${{ steps.repository.outputs.branch }}
+          SELECTED_SHA: ${{ steps.configuration.outputs.sha }}
+          PR_NUMBER: ${{ steps.docs-pr.outputs.pull-request-number }}
+          REQUIRE_DRAFT: ${{ steps.docs-pr.outputs.pull-request-operation == 'created' || steps.docs-pr.outputs.pull-request-operation == 'updated' }}
+        run: |
+          "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" verify-pr \
+            --repo "$GITHUB_WORKSPACE/consumer" --head "$SELECTED_SHA" \
+            --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
+            --pr "$PR_NUMBER" --require-draft "$REQUIRE_DRAFT"
+
+      - name: Wait for merged migration guides
+        if: steps.guides.outputs.guides-ready != 'true'
+        env:
+          DOCS_PR_URL: ${{ steps.docs-pr.outputs.pull-request-url }}
+        run: |
+          echo "::error::Waiting for exact migration guides on the default branch. Merge the documentation PR, then rerun. The existing release draft is unchanged."
+          {
+            echo "## Waiting for migration guides"
+            echo
+            echo "Review and merge ${DOCS_PR_URL}, then rerun the release workflow."
+            echo "The existing release draft may be stale. Do not tag or publish based on it."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Update draft with links to merged guides
+        env:
+          DEFAULT_BRANCH: ${{ steps.repository.outputs.branch }}
+          SELECTED_SHA: ${{ steps.configuration.outputs.sha }}
+          RELEASE_PREVIEW: ${{ steps.preview.outputs.body }}
+          RELEASE_NAME: ${{ steps.preview.outputs.name }}
+          RELEASE_TAG: ${{ steps.preview.outputs.tag_name }}
+        run: |
+          "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" update \
+            --repo "$GITHUB_WORKSPACE/consumer" --head "$SELECTED_SHA" \
+            --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
+            --snapshot "$RUNNER_TEMP/releases.json"

@@ -1,0 +1,120 @@
+# Maintain release drafts in a consuming repository
+
+This guide covers the human steps between a merged product change and a
+reviewed draft release. For maintenance of the toolkit itself, see
+[MAINTAINERS.md](../../MAINTAINERS.md).
+
+## Review incoming product changes
+
+Check the release impact, labels, and fragment content during normal PR
+review. A major PR must add a new valid breaking fragment and cannot use
+`skip-changelog`. The policy check does not replace product tests or globally
+enforce the one-version-label convention.
+
+Keep the two workflow pins synchronized. Your repository owns its labels,
+rulesets, CI triggers, approval requirements, release credentials, and
+publication pipeline.
+
+## Review the generated pull request
+
+After a default-branch push or manual dispatch, the draft workflow resolves the
+release version and generates guides and state. If those exact files are not
+already committed on the selected default-branch snapshot, it opens or updates
+a draft PR on `automation/migration-guides` by default.
+
+An initial run with no breaking fragments can still open a PR for the root
+guide `README.md`. That case does not create a state file; absence is expected,
+and the automation omits the absent state path from its PR file allowlist.
+Do not create an empty state file merely to satisfy readiness.
+
+1. Inspect the generated topics, indexes, version directories, and state diff.
+   Check that the release version and the migration instructions are correct.
+2. For a newly created or updated PR, check it is draft and has the intended labels:
+   `semver:patch` plus `documentation` by default, with no other semantic-version
+   or category labels and no `skip-changelog`. The workflow verifies these label
+   categories, rather than assuming a successful PR-create action established
+   them.
+3. Have a **human mark the PR ready for review**. A PR created or updated with
+   `GITHUB_TOKEN` does not automatically launch normal PR workflows. Configure
+   your CI to listen to `ready_for_review`, and verify that required checks ran.
+4. Review and merge through your normal branch protection process.
+5. Rerun the draft workflow after merge if necessary. A merge performed by
+   automation using `GITHUB_TOKEN` can suppress the follow-up workflow event;
+   use manual dispatch rather than bypassing readiness checks.
+
+Every automation update resets the PR to draft, even if a human previously
+marked it ready. Re-review changed output, mark it ready again, and rerun
+required CI. The workflow never auto-approves, auto-merges, or automatically
+marks the PR ready.
+
+A no-change rerun can leave a PR in the ready-for-review state a human selected;
+draft status is required after creation or an actual update, not after a no-op.
+The workflow still checks its generated label categories.
+
+While documentation is pending, the release workflow waits or fails without
+mutating an existing release draft. This is a review gate, not evidence that
+drafting is broken. The next run must find the **exact** generated docs and
+state on its selected default-branch snapshot; a merely open or approved PR is
+not sufficient.
+
+## Retain source and published history
+
+- Keep breaking fragments forever, including after release. Do not rename
+  them to tidy the directory.
+- Fix unpublished migration content by changing fragments in normal PRs.
+  Do not edit generated files on the automation branch.
+- Retain published guides and their URLs. Submit corrections to published
+  guides through normal review; preserve those reviewed corrections.
+- Treat the state file as automation-owned bookkeeping, not a switch to bypass
+  review or authorize arbitrary deletion.
+
+By default, standalone topics live at
+`docs/migrations/MAJOR.MINOR.PATCH/slug.md`. New topics have an H1 title, an exact
+`**Version introduced:** MAJOR.MINOR.PATCH` line matching their directory, and
+the same six sections as fragments, promoted to H2.
+Root and per-version `README.md` indexes are exempt from the topic section
+schema. Existing legacy guides with a **Breaking changes and migration**
+wrapper remain accepted; new output uses standalone topics.
+
+The state file tracks pending version directories. Deletion or rename of a
+guide is authorized only when its version was pending in state at the **PR
+base**, not merely added to state in the proposed PR.
+
+When an unpublished version changes, automation can clean up obsolete pending
+output. It must keep pending versions linked from **any release body**, not
+just the currently selected release, and retain published history. Do not
+manually delete a version directory to resolve a draft conflict.
+
+## Inspect the final draft before publishing
+
+Once generated documentation and state match the selected branch exactly, the
+workflow rechecks releases, the remote default-branch commit, and readiness
+before creating or patching a draft release. It does not create a tag or
+publish the release.
+
+These API checks are **not atomic with human actions**. Another maintainer can
+publish or change a release between requests. Before publication, independently
+recheck the final draft, intended tag and target commit, release notes, migration
+links, CI, artifacts, and required approvals.
+
+The toolkit's pre-draft readiness is not your publication gate. Keep publication
+credentials and product-specific gates in your own release process.
+
+## Troubleshoot a run
+
+| Symptom | What to check |
+| --- | --- |
+| Workflow ref cannot be resolved | Replace the installation placeholder with a reachable reviewed full wrapper SHA in both callers. |
+| Configuration not found | Commit it at the policy base or selected draft HEAD. An uncommitted worktree file does not count. |
+| Major PR fails after editing a note | Add a new fragment; editing an older one cannot document a new major change. |
+| Generated PR cannot be created | Check token job permissions, repository Actions policy, and the create-and-approve-PR setting. |
+| Generated PR has no product CI | Have a human mark it ready and ensure CI listens to `ready_for_review`. |
+| Release draft remains unchanged | Inspect the waiting/failing readiness result; merge the exact generated docs and state, then rerun. |
+| Run reports a changed remote commit or release | Let current work settle and rerun from the latest default-branch snapshot; do not bypass checks. |
+| No draft run after guide merge | Manually dispatch; bot-token event suppression can prevent a follow-up run. |
+| Version or category is unexpected | Review merged PR labels, skip pre-exclusion, highest conflicting bump, and patch fallback. |
+| Guide deletion is rejected | Check pending state at PR base and all release-body references; do not forge state in the PR. |
+
+For local reproduction, use the [read-only commands](local-development.md).
+Include the workflow pin, selected commit, non-sensitive configuration, and
+the failing step when reporting an issue.
