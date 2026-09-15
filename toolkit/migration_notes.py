@@ -35,19 +35,21 @@ def changed_files(repo: Path, base: str, head: str, directory: str = FRAGMENTS) 
     return list(zip(entries[0:-1:2], entries[1:-1:2]))
 
 
-def markdown_lines(text: str) -> Iterator[tuple[str, re.Match[str] | None]]:
+def markdown_lines(text: str, *, include_fenced: bool = True) -> Iterator[tuple[str, re.Match[str] | None]]:
     fence = ""
     for raw_line in text.splitlines(keepends=True):
         line = raw_line.rstrip("\r\n")
         if fence:
             if re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*", line):
                 fence = ""
-            yield raw_line, None
+            if include_fenced:
+                yield raw_line, None
             continue
         opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
         if opening and (opening[1][0] == "~" or "`" not in opening[2]):
             fence = opening[1]
-            yield raw_line, None
+            if include_fenced:
+                yield raw_line, None
             continue
         yield raw_line, re.match(r" {0,3}(#{1,6})(?:[ \t]+(.*)|$)", line)
 
@@ -125,8 +127,17 @@ def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
         raise ValueError(f"Invalid migration guide path: {name}.")
     if path[2] == "README":
         return
-    if f"**Version introduced:** {path[1]}\n" not in text:
-        raise ValueError(f"{name}: Version introduced must match its version directory.")
+    unfenced = "".join(line for line, _ in markdown_lines(text, include_fenced=False))
+    visible = re.sub(r"<!--.*?-->", "", unfenced, flags=re.DOTALL)
+    metadata = [
+        line for line in visible.splitlines()
+        if line.lstrip().startswith("**Version introduced:**")
+    ]
+    if metadata != [f"**Version introduced:** {path[1]}"]:
+        raise ValueError(
+            f"{name}: Version introduced must appear exactly once outside examples/comments "
+            "and match its version directory."
+        )
     position, _ = find_section(text, "Breaking changes and migration", level=2)
     if position != -1:
         topic = "".join(text.splitlines(keepends=True)[position + 1:]).lstrip("\r\n")
