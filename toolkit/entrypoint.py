@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from configuration import Config, drafter_config, load_config
+from configuration import Config, drafter_config, load_config, resolve_labels, strict_json
 from migration_notes import check_pr, render
 from repository import git
 from update_release_draft import api, process_preview
@@ -31,16 +31,17 @@ def output_values(values: dict[str, str]) -> None:
 
 
 def verify_documentation_pr(pr: dict, config: Config, *, require_draft: bool = True) -> None:
-    labels = [label["name"] for label in pr["labels"]]
-    semver = {config.labels.major, config.labels.minor, config.labels.patch}
+    labels = [label["name"].casefold() for label in pr["labels"]]
+    semver = {name.casefold() for name in (config.labels.major, config.labels.minor, config.labels.patch)}
     categories = {
         config.labels.feature, config.labels.fix,
         config.labels.documentation, config.labels.dependencies,
     }
+    categories = {name.casefold() for name in categories}
     if ((require_draft and pr["draft"] is not True)
-            or [label for label in labels if label in semver or label.casefold().startswith("semver:")] != [config.labels.patch]
-            or [label for label in labels if label in categories] != [config.labels.documentation]
-            or config.labels.skip in labels or "skip-changelog" in {label.casefold() for label in labels}):
+            or [label for label in labels if label in semver or label.startswith("semver:")] != [config.labels.patch.casefold()]
+            or [label for label in labels if label in categories] != [config.labels.documentation.casefold()]
+            or config.labels.skip.casefold() in labels or "skip-changelog" in labels):
         raise ValueError("Documentation PR must be draft with only the configured patch/category labels and no skip-changelog.")
 
 
@@ -55,6 +56,7 @@ def execute() -> None:
     parser.add_argument("--event", type=Path)
     parser.add_argument("--snapshot", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--labels", type=Path)
     parser.add_argument("--pr", type=int)
     parser.add_argument("--require-draft", choices=("true", "false"), default="true")
     args = parser.parse_args()
@@ -81,6 +83,9 @@ def execute() -> None:
     if args.command == "configuration":
         if not args.output:
             parser.error("configuration requires --output")
+        if not args.labels:
+            parser.error("configuration requires --labels")
+        config = resolve_labels(config, strict_json(args.labels.read_text(encoding="utf-8")))
         destination = args.output.resolve()
         if destination.is_relative_to(repo.resolve()):
             raise ValueError("Materialized Release Drafter config must be outside the consumer repository.")
@@ -107,6 +112,11 @@ def execute() -> None:
     if args.command == "snapshot":
         args.snapshot.write_text(json.dumps(api(f"repos/{repository}/releases")), encoding="utf-8")
         return
+    if not args.labels:
+        parser.error(f"{args.command} requires --labels")
+    frozen_labels = resolve_labels(config, strict_json(args.labels.read_text(encoding="utf-8"))).labels
+    if resolve_labels(config, api(f"repos/{repository}/labels")).labels != frozen_labels:
+        raise ValueError("Repository release labels changed during generation; rerun the release workflow.")
     ready = process_preview(
         repo, commit, os.environ["RELEASE_PREVIEW"], os.environ["RELEASE_NAME"],
         os.environ["RELEASE_TAG"], repository,

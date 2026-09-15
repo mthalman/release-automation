@@ -26,6 +26,11 @@ REQUIRED_SECTIONS = (
     "Recommended action",
     "Affected APIs",
 )
+AUTOLINK = re.compile(
+    r"<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*|"
+    r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*)>"
+)
 
 
 def changed_files(repo: Path, base: str, head: str, directory: str = FRAGMENTS) -> list[tuple[str, str]]:
@@ -35,9 +40,17 @@ def changed_files(repo: Path, base: str, head: str, directory: str = FRAGMENTS) 
     return list(zip(entries[0:-1:2], entries[1:-1:2]))
 
 
-def markdown_lines(text: str, *, include_fenced: bool = True) -> Iterator[tuple[str, re.Match[str] | None]]:
+def markdown_lines(
+    text: str, *, include_fenced: bool = True, hide_comments: bool = False,
+    validate_format: bool = False,
+) -> Iterator[tuple[str, re.Match[str] | None]]:
+    """Ignore comments for validation, preserving raw offsets and code literals."""
     fence = ""
+    in_comment = False
+    literal_end = 0
+    line_end = 0
     for raw_line in text.splitlines(keepends=True):
+        line_end += len(raw_line)
         line = raw_line.rstrip("\r\n")
         if fence:
             if re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*", line):
@@ -45,13 +58,81 @@ def markdown_lines(text: str, *, include_fenced: bool = True) -> Iterator[tuple[
             if include_fenced:
                 yield raw_line, None
             continue
-        opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
+        opening = None if in_comment else re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
         if opening and (opening[1][0] == "~" or "`" not in opening[2]):
             fence = opening[1]
             if include_fenced:
                 yield raw_line, None
             continue
-        yield raw_line, re.match(r" {0,3}(#{1,6})(?:[ \t]+(.*)|$)", line)
+        visible = ""
+        heading_line = ""
+        remaining = raw_line
+        while remaining:
+            if in_comment:
+                end = remaining.find("-->")
+                length = end + 3 if end != -1 else len(remaining)
+                heading_line += re.sub(r"[^\r\n]", " ", remaining[:length])
+                visible += re.sub(r"[^\r\n]", "", remaining[:length])
+                remaining = remaining[length:]
+                in_comment = end == -1
+            elif literal_end > line_end - len(remaining):
+                length = min(len(remaining), literal_end - (line_end - len(remaining)))
+                visible += remaining[:length]
+                heading_line += remaining[:length]
+                remaining = remaining[length:]
+            else:
+                token = re.search(r"<|`+", remaining)
+                if token is None:
+                    visible += remaining
+                    heading_line += remaining
+                    break
+                start = token.start()
+                visible += remaining[:start]
+                heading_line += remaining[:start]
+                remaining = remaining[start:]
+                offset = line_end - len(remaining)
+                prefix = raw_line[:len(raw_line) - len(remaining)]
+                escaped = len(re.search(r"\\*$", prefix)[0]) % 2
+                if token[0] == "<":
+                    if not escaped and remaining.startswith("<!--"):
+                        in_comment = True
+                    elif not escaped and (autolink := AUTOLINK.match(remaining)):
+                        literal_end = offset + autolink.end()
+                    elif not escaped and validate_format and re.match(r"</?[A-Za-z]|<[!?]", remaining):
+                        # Attribute backticks must never turn an HTML opener into a code span.
+                        raise ValueError(
+                            "Raw HTML is not supported in migration documents; "
+                            "use Markdown or a code example instead."
+                        )
+                    else:
+                        visible += "<"
+                        heading_line += "<"
+                        remaining = remaining[1:]
+                else:
+                    delimiter = rf"(?<!`){re.escape(token[0])}(?!`)"
+                    following = remaining[len(token[0]):].rstrip("\r\n")
+                    closing = None if escaped else re.search(delimiter, following)
+                    if closing:
+                        literal_end = offset + len(token[0]) + closing.end()
+                    else:
+                        if not escaped and validate_format:
+                            # Look ahead only to reject, never to shield text on later lines.
+                            continuation = re.split(
+                                r"\r?\n[ \t]*\r?\n", text[offset + len(token[0]):], maxsplit=1
+                            )[0]
+                            if re.search(delimiter, continuation):
+                                raise ValueError(
+                                    "Inline code must stay on a single line; "
+                                    "use fenced code blocks for multiline examples."
+                                )
+                        length = 1 if escaped else len(token[0])
+                        visible += remaining[:length]
+                        heading_line += remaining[:length]
+                        remaining = remaining[length:]
+        yield (
+            visible if hide_comments else raw_line,
+            re.match(r" {0,3}(#{1,6})(?:[ \t]+(.*)|$)", heading_line.rstrip("\r\n")),
+        )
 
 
 def shift_heading_levels(text: str, offset: int) -> str:
@@ -70,7 +151,7 @@ def find_section(text: str, title: str | None, level: int = 4) -> tuple[int, str
     content = []
     position = -1
     active = False
-    for line_number, (raw_line, heading) in enumerate(markdown_lines(text)):
+    for line_number, (raw_line, heading) in enumerate(markdown_lines(text, hide_comments=True, validate_format=True)):
         if heading:
             if len(heading[1]) > level:
                 continue
@@ -96,12 +177,18 @@ def validate_fragment(name: str, text: str, config: Config = DEFAULT) -> None:
         raise ValueError(f"{name}: migration fragment filename 'readme' is reserved for the version index.")
     if MIGRATION_START in text or MIGRATION_END in text or TOPIC_MARKER_PREFIX in text:
         raise ValueError(f"{name}: migration fragment contains a reserved release-note marker.")
-    if not re.match(r"### [^\n]+\n", text):
+    first_line, _ = next(markdown_lines(text, hide_comments=True, validate_format=True), ("", None))
+    title = re.match(r"### ([^\n]+)\n", first_line)
+    if (
+        not re.match(r"### [^\n]+\n", text)
+        or not title
+        or not re.sub(r"[ \t]+#+[ \t]*$", "", title[1]).strip()
+    ):
         raise ValueError(f"{name}: migration fragment must start with a level-three title.")
     positions = []
     for heading in REQUIRED_SECTIONS:
         position, section = find_section(text, heading)
-        content = re.sub(r"<!--.*?-->", "", section, flags=re.DOTALL).strip()
+        content = section.strip()
         if not content or content.upper().rstrip(".") in ("TODO", "TBD", "N/A"):
             raise ValueError(f"{name}: migration fragment needs a completed '#### {heading}' section.")
         positions.append(position)
@@ -110,7 +197,7 @@ def validate_fragment(name: str, text: str, config: Config = DEFAULT) -> None:
             f"{name}: required sections must appear in this order: "
             + ", ".join(REQUIRED_SECTIONS) + "."
         )
-    for line_number, (_, heading) in enumerate(markdown_lines(text)):
+    for line_number, (_, heading) in enumerate(markdown_lines(text, validate_format=True)):
         if line_number > 0 and heading and len(heading[1]) <= 3:
             raise ValueError(
                 f"{name}: migration fragment body headings must be level four or deeper; "
@@ -127,8 +214,9 @@ def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
         raise ValueError(f"Invalid migration guide path: {name}.")
     if path[2] == "README":
         return
-    unfenced = "".join(line for line, _ in markdown_lines(text, include_fenced=False))
-    visible = re.sub(r"<!--.*?-->", "", unfenced, flags=re.DOTALL)
+    visible = "".join(
+        line for line, _ in markdown_lines(text, include_fenced=False, hide_comments=True, validate_format=True)
+    )
     metadata = [
         line for line in visible.splitlines()
         if line.lstrip().startswith("**Version introduced:**")
@@ -139,14 +227,21 @@ def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
             "exactly once outside examples/comments."
         )
     position, _ = find_section(text, "Breaking changes and migration", level=2)
+    # Remove comments before slicing so their state survives the guide preamble.
+    visible_lines = [line for line, _ in markdown_lines(text, hide_comments=True)]
     if position != -1:
-        topic = "".join(text.splitlines(keepends=True)[position + 1:]).lstrip("\r\n")
+        start = position + 1
+        topic = "".join(visible_lines[start:]).lstrip("\r\n")
     else:
         position, _ = find_section(text, None, level=1)
         if position == -1:
             raise ValueError(f"{name}: migration topic is missing its title heading.")
-        topic = "".join(text.splitlines(keepends=True)[position:])
+        start = position
+        topic = "".join(visible_lines[start:])
         topic = shift_heading_levels(topic, 2).lstrip(" ")
+    original_topic = "".join(text.splitlines(keepends=True)[start:])
+    if MIGRATION_START in original_topic or MIGRATION_END in original_topic or TOPIC_MARKER_PREFIX in original_topic:
+        raise ValueError(f"{name}: migration fragment contains a reserved release-note marker.")
     validate_fragment(f"{config.fragment_root}/+{path[2]}.breaking.md", topic, config)
 
 

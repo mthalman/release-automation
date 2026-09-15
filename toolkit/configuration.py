@@ -1,6 +1,6 @@
 import json
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from repository import committed_file, git, safe_path
@@ -115,6 +115,23 @@ def load_config(repo: Path, commit: str, config_path: str = "", default_branch: 
     if config.automation_branch == default_branch:
         raise ValueError("The automation branch must differ from the default branch.")
     return config
+
+
+def resolve_labels(config: Config, repository_labels: list[dict]) -> Config:
+    if not isinstance(repository_labels, list):
+        raise ValueError("Expected a repository label snapshot array.")
+    names = {}
+    for label in repository_labels:
+        if not isinstance(label, dict) or not isinstance(label.get("name"), str) or not label["name"]:
+            raise ValueError("Invalid repository label snapshot entry.")
+        name = label["name"]
+        identity = name.casefold()
+        if identity in names:
+            raise ValueError(f"Ambiguous repository label identity: {name}.")
+        names[identity] = name
+    return replace(config, labels=Labels(**{
+        key: names.get(value.casefold(), value) for key, value in asdict(config.labels).items()
+    }))
 
 
 def drafter_config(config: Config) -> dict:
