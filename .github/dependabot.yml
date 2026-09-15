@@ -10,3 +10,10 @@ updates:
     schedule:
       interval: weekly
     labels: [dependencies, "semver:patch"]
+  - package-ecosystem: gomod
+    directory: /tools
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-type: all
+    labels: [dependencies, "semver:patch"]

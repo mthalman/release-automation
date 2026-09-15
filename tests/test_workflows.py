@@ -74,7 +74,31 @@ class WorkflowContractTests(unittest.TestCase):
                 if not target.startswith("./"):
                     self.assertRegex(target, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
         ci = (WORKFLOWS / "ci.yml").read_text(encoding="utf-8")
-        self.assertRegex(ci, r"go install github\.com/rhysd/actionlint/cmd/actionlint@[0-9a-f]{40}\b")
+        self.assertNotIn("go install", ci)
+
+    def test_actionlint_uses_dependabot_managed_tools_module(self):
+        ci = (WORKFLOWS / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn("go-version-file: tools/go.mod", ci)
+        self.assertIn("cache-dependency-path: tools/go.sum", ci)
+        self.assertIn(
+            'go -C tools build -mod=readonly -o "$RUNNER_TEMP/bin/actionlint" '
+            'github.com/rhysd/actionlint/cmd/actionlint',
+            ci,
+        )
+        self.assertIn('run: \'"$RUNNER_TEMP/bin/actionlint" -color\'', ci)
+        module = (ROOT / "tools" / "go.mod").read_text(encoding="utf-8")
+        self.assertIn("tool github.com/rhysd/actionlint/cmd/actionlint", module)
+        version = re.search(r"^\s*(?:require )?github\.com/rhysd/actionlint (v\S+)", module, re.MULTILINE)
+        self.assertIsNotNone(version)
+        checksums = (ROOT / "tools" / "go.sum").read_text(encoding="utf-8")
+        self.assertIn(f"github.com/rhysd/actionlint {version[1]} h1:", checksums)
+        self.assertIn(f"github.com/rhysd/actionlint {version[1]}/go.mod h1:", checksums)
+        dependabot = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+        self.assertRegex(
+            dependabot,
+            r"package-ecosystem: gomod\n\s+directory: /tools\n\s+schedule:\n\s+interval: weekly"
+            r"\n\s+allow:\n\s+- dependency-type: all",
+        )
 
     def test_policy_has_no_head_checkout_or_dependency_install(self):
         text = (WORKFLOWS / "migration-policy.yml").read_text(encoding="utf-8")

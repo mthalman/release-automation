@@ -91,6 +91,16 @@ review the corresponding upstream changes. Do not let an automated dependency
 bump silently alter the compatibility contract. Update comments or
 documentation that name versions when their pins change.
 
+The development-only [Go tools module](tools/go.mod) owns actionlint and its
+dependency graph. Dependabot checks `/tools` weekly, including indirect
+dependencies because Go records tool requirements that way. Review changes to both
+`go.mod` and `go.sum`; CI builds with `-mod=readonly` and runs the linter on this
+repository's workflows. For a manual update, run
+`go -C tools get -tool github.com/rhysd/actionlint/cmd/actionlint@<version>`,
+then `go -C tools mod tidy`, and review the resulting module changes.
+Changes confined to this development module do not require a toolkit payload
+refresh.
+
 Consumers upgrade both workflow references together in a reviewed pull
 request. Keep the v1 documentation at the upgrade commit consistent with the
 wrappers and payload. No PyPI release or installer publication is needed.

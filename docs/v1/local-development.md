@@ -124,8 +124,12 @@ actionlint
 
 The repository's [CI workflow](../../.github/workflows/ci.yml) runs the unit
 suite on Linux and Windows with Python 3.13. It also runs workflow validation
-with actionlint built from a literal immutable source commit, not a mutable
-tag. CI listens to ordinary `pull_request` events, including
+with actionlint built from the dedicated [Go tools module](../../tools/go.mod).
+Its selected version and dependency checksums are committed in `tools/go.mod`
+and `tools/go.sum`; Dependabot proposes weekly module updates. The build uses
+`-mod=readonly` so it cannot silently rewrite dependency selections. This Go
+module is only for toolkit development, not consumer release workflows.
+CI listens to ordinary `pull_request` events, including
 `ready_for_review`, pushes to `main`, and manual dispatch. It tests the proposed
 toolkit code; the separate trusted policy workflow validates PR data.
 

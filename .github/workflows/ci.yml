@@ -40,9 +40,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Install versioned actionlint
-        run: |
-          GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: tools/go.mod
+          cache-dependency-path: tools/go.sum
+      - name: Build module-pinned actionlint
+        run: go -C tools build -mod=readonly -o "$RUNNER_TEMP/bin/actionlint" github.com/rhysd/actionlint/cmd/actionlint
       - name: Validate workflows
         run: '"$RUNNER_TEMP/bin/actionlint" -color'
 
