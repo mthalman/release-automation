@@ -42,6 +42,6 @@ jobs:
           persist-credentials: false
       - name: Install versioned actionlint
         run: |
-          GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca
       - name: Validate workflows
         run: '"$RUNNER_TEMP/bin/actionlint" -color'

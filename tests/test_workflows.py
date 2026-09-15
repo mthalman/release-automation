@@ -73,6 +73,8 @@ class WorkflowContractTests(unittest.TestCase):
             for target in re.findall(r"uses:\s*(\S+)", workflow.read_text(encoding="utf-8")):
                 if not target.startswith("./"):
                     self.assertRegex(target, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
+        ci = (WORKFLOWS / "ci.yml").read_text(encoding="utf-8")
+        self.assertRegex(ci, r"go install github\.com/rhysd/actionlint/cmd/actionlint@[0-9a-f]{40}\b")
 
     def test_policy_has_no_head_checkout_or_dependency_install(self):
         text = (WORKFLOWS / "migration-policy.yml").read_text(encoding="utf-8")
