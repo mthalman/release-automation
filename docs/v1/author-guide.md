@@ -26,8 +26,7 @@ produce a draft rather than fail; maintainers must review them.
 `semver:major` takes precedence in the unified **Breaking Changes** category.
 Other exclusive categories are **Features**, **Bug Fixes**, **Documentation**,
 and **Dependencies**, followed by **Maintenance** as the fallback. Dependencies
-collapse after five entries. Category labels are canonical names, not `type:*`
-aliases.
+collapse after five entries.
 
 For a non-breaking change that should not appear in release notes, use
 `skip-changelog`. Release Drafter pre-excludes that PR before category and
@@ -57,7 +56,7 @@ and summarize the expected behavior locally. For example:
 - Before opening or updating a PR, assess its release impact and apply exactly
   one version label: semver:major, semver:minor, or semver:patch.
 - Apply at most one category label: enhancement, bug, documentation, or
-  dependencies. Use no category for other maintenance; do not use type:* aliases.
+  dependencies. Use no category for other maintenance.
 - For breaking changes, use semver:major and add a new completed migration
   fragment. Never combine a breaking change with skip-changelog.
 - Use skip-changelog only for intentionally excluded non-breaking changes.

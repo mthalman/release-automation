@@ -48,8 +48,8 @@ or your normal label-management process:
 | `documentation` | Documentation category |
 | `dependencies` | Dependencies category |
 
-Colors and descriptions are your choice. There are no `type:*` aliases. If
-you override label names, create the configured names instead and share them
+Colors and descriptions are your choice. If you override label names, create
+the configured names instead and share them
 with contributors. See the [author guide](author-guide.md#choose-labels).
 
 ## 4. Add the policy caller
