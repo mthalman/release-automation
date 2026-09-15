@@ -13,8 +13,8 @@ pipelines or create a first published release for you.
 
 Choose a reviewed, reachable, full commit SHA from
 `mthalman/release-automation` and use it in **both** callers below.
-`REPLACE_WITH_REVIEWED_COMMIT_SHA` is an installation placeholder before the
-initial implementation merge, not a real ref. Do not paste the examples
+`REPLACE_WITH_REVIEWED_COMMIT_SHA` is an installation placeholder, not a real
+ref. Do not paste the examples
 unchanged and expect Actions to resolve them.
 
 The selected wrapper commit already pins its toolkit payload. You do not supply

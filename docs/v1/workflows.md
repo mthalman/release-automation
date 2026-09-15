@@ -29,18 +29,20 @@ Toolkit PRs introducing payload pins preserve P as an ancestor of W by using a
 merge commit rather than squash or rebase. CI compares the pinned toolkit tree
 with the proposed files and runs an archive of P from full history. See
 [payload retention](../../MAINTAINERS.md#update-the-immutable-payload-pins);
-the initial setup does not create separate retention branches or tags.
+separate retention branches or tags require an explicit maintenance decision.
 
-External action dependencies are also SHA-pinned. The supported baseline uses
-Release Drafter v7.7, create-pull-request v8.1.1, Python 3.13, and Towncrier
-26.9.0. See the [pinning procedure](../../MAINTAINERS.md#update-the-immutable-payload-pins).
+External action dependencies are also SHA-pinned. The
+[workflow definitions](../../.github/workflows) and
+[dependency lock](../../toolkit/requirements.txt) identify the runtime and
+dependency versions for each toolkit commit. See the
+[pinning procedure](../../MAINTAINERS.md#update-the-immutable-payload-pins).
 
 For self-dogfooding, this toolkit repository calls its reusable workflows using
 `./.github/workflows/migration-policy.yml` and
 `./.github/workflows/release-draft.yml`. GitHub resolves each local workflow at
 the caller's commit, while its wrapper still uses literal payload P. This
 same-repository arrangement does not change the external consumer pinning
-contract. Activation and live verification require merge and repository setup;
+contract. Activation and live verification require deployment and repository setup;
 see [self-dogfooding setup](../../MAINTAINERS.md#enable-self-dogfooding).
 
 ## Migration policy
@@ -64,6 +66,11 @@ The validator checks fragment naming and section content, new-fragment
 requirements for major PRs, the major/skip conflict, guide structure, and
 retention rules. These checks do not enforce every label convention or replace
 consumer product tests.
+Fragment and topic validation supports a constrained Markdown format: raw HTML
+outside code examples is rejected, and ordinary comments cannot supply required
+headings or content. Inline code is restricted to a single source line;
+multiline examples require fenced code blocks. This keeps the trusted validator
+standard-library-only; it is not a general-purpose CommonMark or HTML renderer.
 Major and exclusion label comparisons are case-insensitive. A breaking PR
 cannot use either the configured exclusion label or canonical
 `skip-changelog`, even when the configured exclusion label has another name.
@@ -83,21 +90,25 @@ The run follows this order:
 1. **Select the source snapshot.** Read the repository's default branch from
    GitHub metadata, select its latest commit, and fetch full history. Use that
    exact commit for configuration and generation, even on manual dispatch.
-2. **Resolve the draft once.** Run Release Drafter v7.7 in dry-run mode using
-   the materialized locked preset. Resolve a single version and previous
+2. **Resolve the draft once.** Run the pinned Release Drafter in dry-run mode using
+   the materialized locked preset. Snapshot repository labels first and map
+   configured names to their actual spellings for the case-sensitive matcher.
+   The preset lives at the workspace root, outside the consumer checkout, and
+   is loaded as `file:/release-drafter.json`. Resolve a single version and previous
    release tag, then carry that result through generation and draft mutation.
    Do not independently calculate a second version later.
    The preview's previous-tag marker must be empty for an initial release or
    contain exactly a stable `vMAJOR.MINOR.PATCH` tag. Prerelease suffixes, build
    metadata, and other refs are rejected.
 3. **Generate migration content.** Render retained breaking fragments using
-   toolkit-owned Towncrier assets. Produce standalone topics, indexes, and
+   toolkit-owned Towncrier assets after rechecking label spellings against the
+   snapshot. Produce standalone topics, indexes, and
    pending-version state. Preserve published guides and reviewed corrections;
    keep pending versions linked from all release bodies.
    On an initial run with no fragments, generation still creates the root guide
    `README.md` but does not create a state file. The PR file allowlist omits an
    absent state path.
-4. **Create or update the review PR.** Use create-pull-request v8.1.1 on the
+4. **Create or update the review PR.** Use the pinned create-pull-request on the
    configured automation branch, with draft always true. Updates reset it to
    draft. Use the configured patch and documentation labels, without
    `skip-changelog`.
@@ -113,7 +124,7 @@ The run follows this order:
    merge are required; a matching file only on the automation branch is not
    ready.
 7. **Recheck mutable state.** Re-read releases, the remote selected-branch
-   commit, and readiness. Stop if assumptions changed.
+   commit, relevant label spellings, and readiness. Stop if assumptions changed.
 8. **Write only a draft.** Only after those checks, POST a new draft release or
    PATCH the existing draft. Do not publish, create tags, merge a PR, or run
    consumer publication.

@@ -115,12 +115,27 @@ default labels, and update contributor guidance. The toolkit maps these
 supported overrides coherently across validation, version resolution,
 generated PR labels, and release categories.
 
+Before previewing a release, the workflow snapshots repository labels and
+resolves configured names to their actual GitHub spellings, matching label
+identity case-insensitively. Release Drafter receives those exact spellings
+because its matcher is case-sensitive. For example, an existing
+`SEMVER:MAJOR` label still selects a major bump with the default configuration.
+The same resolution applies to category and exclusion labels.
+
+The workflow rechecks relevant label spellings before preparing guides and
+updating the draft. If they changed since the snapshot, it fails and asks for a
+rerun. These checks do not enforce general label counts or make GitHub API
+operations atomic.
+
 ## Locked rendering configuration
 
 The toolkit owns the Release Drafter and Towncrier assets. Supported overrides
 are applied to a locked Release Drafter preset and materialized as JSON, which
-is valid YAML for Release Drafter's `file:<absolute path>` configuration input.
-That file is generated from the toolkit asset, not loaded as arbitrary consumer
+is valid YAML for Release Drafter. The workflow writes
+`$GITHUB_WORKSPACE/release-drafter.json`, outside the separate consumer checkout,
+and passes `file:/release-drafter.json`. In the pinned loader, the leading slash
+means relative to `GITHUB_WORKSPACE`, **not an absolute filesystem path**.
+The file is generated from the toolkit asset, not loaded as arbitrary consumer
 Release Drafter configuration.
 
 There is no consumer YAML execution, `_extends`, custom template configuration,

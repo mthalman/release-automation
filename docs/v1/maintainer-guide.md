@@ -76,6 +76,12 @@ appear exactly once as that canonical line, outside code fences and HTML
 comments. Fenced or commented examples cannot substitute for the real metadata;
 duplicate or conflicting metadata lines outside examples and comments are
 rejected.
+Topics share the fragment Markdown restrictions: raw HTML outside single-line
+inline code or fenced code examples is rejected. Multiline examples require
+fenced blocks. Ordinary comments remain allowed but do not count as
+instructions. Convert raw HTML and multiline inline code in retained topics
+before adopting this validator; do not remove published history to bypass
+validation.
 Root and per-version `README.md` indexes are exempt from the topic section
 schema. Existing legacy guides with a **Breaking changes and migration**
 wrapper remain accepted; new output uses standalone topics.

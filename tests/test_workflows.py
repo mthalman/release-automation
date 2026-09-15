@@ -134,7 +134,11 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("publish: false", text)
         self.assertIn("draft: always-true", text)
         self.assertIn("path: consumer", text)
-        self.assertIn("config-name: file:${{ steps.configuration.outputs.config-file }}", text)
+        self.assertIn("config-name: file:/release-drafter.json", text)
+        self.assertIn('--output "$GITHUB_WORKSPACE/release-drafter.json"', text)
+        self.assertNotIn('--output "$RUNNER_TEMP/release-drafter.json"', text)
+        self.assertIn('"repos/$GITHUB_REPOSITORY/labels" --paginate --slurp', text)
+        self.assertEqual(text.count('--labels "$RUNNER_TEMP/release-labels.json"'), 3)
         self.assertIn("ref: ${{ steps.repository.outputs.branch }}", text)
         self.assertIn("fetch-depth: 0", text)
         self.assertIn("${{ steps.guides.outputs.add-state-path }}", text)
@@ -153,6 +157,12 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertNotIn("pull_request_target:", ci)
         self.assertIn("python -m unittest discover -s tests -q", ci)
         self.assertNotIn("contents: write", ci)
+        self.assertIn("name: Release Drafter contract", ci)
+        self.assertIn("repository: release-drafter/release-drafter", ci)
+        self.assertIn("ref: 34d80673e067bdc0c24568d3af899c216adcfaa9", ci)
+        self.assertIn('node-version: "24"', ci)
+        self.assertIn('npm --prefix "$GITHUB_WORKSPACE/_release-drafter" ci --ignore-scripts --omit=dev', ci)
+        self.assertIn('node tests/drafter-contract.mjs "$GITHUB_WORKSPACE/_release-drafter" python', ci)
 
 
 if __name__ == "__main__":

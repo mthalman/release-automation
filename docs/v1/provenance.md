@@ -1,36 +1,43 @@
 # Source provenance and extraction scope
 
-This toolkit extracts release-drafting and migration-guide automation from
-Matt Thalman's MIT-licensed source implementation. It retains the original
+This document records the toolkit's extraction history, not its current
+dependency versions or deployment status. The source is
+[mthalman/docker-creds-provider](https://github.com/mthalman/docker-creds-provider),
+Matt Thalman's MIT-licensed implementation. The toolkit retains the original
 `Copyright (c) 2020 Matt Thalman` notice in [LICENSE](../../LICENSE).
 
 ## Extraction baseline
 
 The selected behavior baseline is commit
-`c178afbb87f29bf67abd1fed21e413df5bc6535d`, through upstream PR #108.
+`c178afbb87f29bf67abd1fed21e413df5bc6535d`, through
+[mthalman/docker-creds-provider#108](https://github.com/mthalman/docker-creds-provider/pull/108).
 The relevant upstream changes are:
 
 | Upstream PR | Extracted behavior |
 | --- | --- |
-| #89 | Release Drafter label-driven notes |
-| #100 | Canonical label vocabulary |
-| #103 | Release-draft and migration-guide pipeline |
-| #104 | Version-only release names |
-| #105 | Merged migration-guide readiness gate |
-| #107 | Standalone migration topics |
-| #108 | Unified Breaking Changes category |
+| [mthalman/docker-creds-provider#89](https://github.com/mthalman/docker-creds-provider/pull/89) | Release Drafter label-driven notes |
+| [mthalman/docker-creds-provider#100](https://github.com/mthalman/docker-creds-provider/pull/100) | Canonical label vocabulary |
+| [mthalman/docker-creds-provider#103](https://github.com/mthalman/docker-creds-provider/pull/103) | Release-draft and migration-guide pipeline |
+| [mthalman/docker-creds-provider#104](https://github.com/mthalman/docker-creds-provider/pull/104) | Version-only release names |
+| [mthalman/docker-creds-provider#105](https://github.com/mthalman/docker-creds-provider/pull/105) | Merged migration-guide readiness gate |
+| [mthalman/docker-creds-provider#107](https://github.com/mthalman/docker-creds-provider/pull/107) | Standalone migration topics |
+| [mthalman/docker-creds-provider#108](https://github.com/mthalman/docker-creds-provider/pull/108) | Unified Breaking Changes category |
 
 At extraction time, upstream main
 `fdcb559d14c4b877f24247445458b89953fb93d5`
-also included PR #109's generated content and a Python 3.14 dependency bump.
+also included
+[mthalman/docker-creds-provider#109](https://github.com/mthalman/docker-creds-provider/pull/109)'s
+generated content and a Python 3.14 dependency bump.
 That later snapshot did not add further algorithm fixes to extract. This
-toolkit deliberately pins Python 3.13 rather than inheriting that bump.
+extraction retained Python 3.13 rather than inheriting that bump. Consult the
+[workflow definitions](../../.github/workflows) at the selected toolkit commit
+for its runtime versions.
 
 ## Baseline regression evidence
 
 The [baseline test](../../tests/test_baseline.py) compares the toolkit's output
 with [a golden fixture](../../tests/fixtures/pr108-output.json) captured from
-the actual PR #108 implementation at the selected baseline. The comparison
+the actual implementation at the selected baseline. The comparison
 checks exact text for rendered notes, versioned documents and state, indexes,
 and the unified release body. Its code-fence example preserves a literal
 heading and `$OWNER`.

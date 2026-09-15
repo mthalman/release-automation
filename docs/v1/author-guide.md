@@ -112,8 +112,27 @@ instead of writing only `N/A`.
 
 Every required section needs real content. Empty sections, comment-only
 sections, and placeholder-only values such as `TODO`, `TBD`, or `N/A` are
-invalid. Keep the title as the only H3; body headings are H4 or deeper. Do not
+invalid. Titles, required headings, and their instructions must be visible:
+HTML comments cannot supply them, even when a comment spans multiple sections.
+Literal HTML-comment examples inside single-line inline code spans or fenced
+code blocks remain unchanged.
+Keep the title as the only H3; body headings are H4 or deeper. Do not
 insert reserved migration-note or topic markers.
+
+Raw HTML is not supported outside code examples. Use Markdown rather than
+elements such as `<div>`, `<details>`, or `<script>`; HTML declarations,
+processing instructions, and CDATA are also unsupported. Ordinary HTML
+comments are allowed but cannot supply required instructions. Put literal HTML
+in a single-line inline code span or fenced code block when documenting an API
+or syntax. Inline code must start and end on the same source line. Use fenced
+code blocks for multiline examples, including examples within lists.
+Normal Markdown links and autolinks remain supported.
+
+This explicit subset keeps the trusted validator standard-library-only without
+depending on a full HTML/Markdown renderer to decide which guidance is visible.
+Before adopting or upgrading the toolkit, convert raw HTML in retained
+fragments and migration topics to Markdown or code examples, and convert
+multiline inline code spans to fenced blocks.
 
 Use fenced code blocks for examples. The renderer preserves heading-like code
 and literal strings such as `$OWNER`; do not pre-expand or escape them merely

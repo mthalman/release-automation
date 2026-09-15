@@ -24,6 +24,12 @@ Before accepting a change:
   corrections and references from all release bodies.
 - Update versioned docs and identify any compatibility changes.
 
+Write maintained guides as procedures and contracts that apply to future
+installations and upgrades. Keep PR-specific test results, setup status, and
+temporary blockers in the PR or issue, not in these guides. Link to authoritative
+workflow and dependency files instead of repeating version inventories.
+Historical facts belong in the explicitly scoped provenance document.
+
 Use a disposable public test repository for end-to-end exercises. Test the
 human ready-for-review step and a rerun after guide merge, not just initial PR
 creation. Local tests do not prove GitHub permissions, nested check names,
@@ -52,9 +58,9 @@ Two commits avoid a circular hash dependency:
    toolkit and archives and runs P itself. Full-history checkout therefore
    needs P in the branch history, not merely referenced in workflow text.
 5. Verify every external action and shared workflow dependency remains pinned to a
-   reviewed immutable SHA. Retain the intended versions: Python 3.13,
-   Towncrier 26.9.0, Release Drafter v7.7, and create-pull-request v8.1.1,
-   unless a reviewed change deliberately updates them.
+   reviewed immutable SHA. Preserve the tested runtime and dependency versions
+   in the workflow definitions and `toolkit/requirements.txt` unless the change
+   deliberately updates them.
 6. Run wrapper/payload consistency tests and workflow lint. Commit the wrapper
    changes as **W**, then push W.
 7. Test consumers against W. Publish the reviewed full W SHA in installation
@@ -65,13 +71,13 @@ Two commits avoid a circular hash dependency:
 
 Consumers pin W in both caller workflows; W binds them to P. Never insert W
 into its own contents, substitute an invented SHA, or publish a wrapper before
-its payload is reachable. Before the first implementation merge, documentation
-uses `REPLACE_WITH_REVIEWED_COMMIT_SHA` deliberately.
+its payload is reachable. Installation examples use
+`REPLACE_WITH_REVIEWED_COMMIT_SHA` to require an explicit version selection.
 
 An alternative retention design can keep P reachable through a permanent
 immutable ref, but that requires an explicit maintenance decision and suitable
-CI access. The initial setup creates no extra branch or tag for payload
-retention and relies on merge-commit history instead.
+CI access. The default retention strategy relies on merge-commit history;
+do not create retention branches or tags without that maintenance decision.
 
 A documentation-only or wrapper-only commit can retain an existing P if the
 payload file objects are unchanged. **Any payload source, asset, or requirement
@@ -111,7 +117,7 @@ literal immutable payload P, so self-dogfooding does not bypass the two-commit
 pinning procedure or automatically execute unpinned toolkit changes. External
 consumers continue to pin the reviewed wrapper commit W.
 
-After these workflows merge:
+When enabling self-dogfooding, or verifying it after an upgrade:
 
 1. Enable the required Actions policies and **Allow GitHub Actions to create
    and approve pull requests**, as described in
@@ -126,17 +132,14 @@ After these workflows merge:
 5. Rerun drafting and verify that exact committed guides and state permit a
    draft update. Inspect the final draft before any manual publication.
 
-During initial setup, the canonical labels were created in this toolkit
-repository only. A read-only inspection found
-`can_approve_pull_request_reviews=false`; repository settings were not changed.
-The create-and-approve-PR setting still needs maintainer action before PR
-creation can be verified.
+Verify current settings and labels rather than assuming a previous deployment
+configured them. Record run links, observed results, and outstanding setup work
+in the relevant PR or issue.
 
-Initial PR CI passed on Linux and Windows. That run does not establish live
-validation of subsequent review fixes or the end-to-end release lifecycle. Merged
-workflow files alone do not prove permissions, token event behavior, or
-review/merge integration. Self-dogfooding creates no automatic merge, tag, or
-published release, and does not replace independent publication gates.
+Passing CI and merged workflow files alone do not prove permissions, token event
+behavior, or review/merge integration. Self-dogfooding creates no automatic
+merge, tag, or published release, and does not replace independent publication
+gates.
 
 ## Compatibility and provenance
 

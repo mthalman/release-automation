@@ -26,16 +26,10 @@ py -3.13 -m venv .venv
 python -m pip install -r toolkit\requirements.txt
 ```
 
-Use Python 3.13, not an unreviewed newer runtime. `toolkit/requirements.txt`
-pins the complete dependency set:
-
-| Package | Version | Installation scope |
-| --- | --- | --- |
-| Towncrier | 26.9.0 | All platforms |
-| Click | 8.5.0 | All platforms |
-| Jinja2 | 3.1.6 | All platforms |
-| MarkupSafe | 3.0.3 | All platforms |
-| Colorama | 0.4.6 | Windows only, through the `sys_platform == "win32"` marker |
+Use the Python version tested by the workflows at your toolkit commit; the
+examples above use Python 3.13. The [dependency lock](../../toolkit/requirements.txt)
+pins the complete rendering dependency set and any platform-specific markers.
+Install from that file rather than maintaining a separate package list.
 
 Install from the requirements file instead of selecting dependencies
 individually. You do not need to install this project from PyPI.
@@ -109,14 +103,18 @@ python -m unittest discover -s tests -q
 
 Tests add their own toolkit import paths; no global `PYTHONPATH` change is
 needed. The suite includes
-[a PR #108 baseline comparison](../../tests/test_baseline.py) against
+[an upstream baseline comparison](../../tests/test_baseline.py) against
 [output captured from the actual upstream implementation](../../tests/fixtures/pr108-output.json).
 It checks exact rendered notes, generated documents and state, indexes, and the
 unified release body, including a fenced literal `$OWNER` example.
 
-The [review regression tests](../../tests/test_review_regressions.py) cover
+The [policy and metadata tests](../../tests/test_review_regressions.py) cover
 canonical guide metadata, supported previous-release boundaries, and
 case-insensitive breaking-change/exclusion label checks.
+The [comment tests](../../tests/test_markdown_comments.py) verify that hidden
+instructions cannot satisfy the fragment or guide schema while fenced examples
+remain literal. [Label snapshot tests](../../tests/test_label_resolution.py)
+cover exact repository spellings and rejection of changes during generation.
 
 For workflow edits, run the existing linter when installed:
 
@@ -126,10 +124,22 @@ actionlint
 
 The repository's [CI workflow](../../.github/workflows/ci.yml) runs the unit
 suite on Linux and Windows with Python 3.13. It also runs workflow validation
-with actionlint built from a literal immutable source commit corresponding to
-v1.7.12, not a mutable tag. CI listens to ordinary `pull_request` events, including
+with actionlint built from a literal immutable source commit, not a mutable
+tag. CI listens to ordinary `pull_request` events, including
 `ready_for_review`, pushes to `main`, and manual dispatch. It tests the proposed
 toolkit code; the separate trusted policy workflow validates PR data.
+
+CI also runs [dependency contract tests](../../tests/drafter-contract.mjs) on
+Linux with Node 24 and Python 3.13. They load the actual pinned Release Drafter
+implementation and exercise its file loader, category matcher, and version
+resolver against configuration emitted by this toolkit. The dependency is
+checked out separately and installed from its own lockfile with install scripts
+disabled. Its checkout must match the workflow's Release Drafter pin.
+
+The Linux runtime matters: `file:/release-drafter.json` is a workspace-root
+reference under the dependency's POSIX path handling, not a portable absolute
+filesystem path. These tests complement the offline Python suite; they require
+provisioning the pinned dependency source and Node packages.
 
 Do not claim a live Actions run based on local unit tests or lint. Repository
 permissions, token-trigger behavior, actual nested check names, and the human

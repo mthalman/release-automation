@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: mthalman/release-automation
-          ref: 96d426e6a52dc46a098e24029ab1da1d7f0230cd
+          ref: c2745c080528e580648f5039b46958acdc3f1774
           path: _release-automation
           persist-credentials: false
 
@@ -68,10 +68,12 @@ jobs:
         env:
           DEFAULT_BRANCH: ${{ steps.repository.outputs.branch }}
         run: |
+          gh api "repos/$GITHUB_REPOSITORY/labels" --paginate --slurp --jq 'add' > "$RUNNER_TEMP/release-labels.json"
           "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" configuration \
             --repo "$GITHUB_WORKSPACE/consumer" --head HEAD \
             --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
-            --output "$RUNNER_TEMP/release-drafter.json"
+            --labels "$RUNNER_TEMP/release-labels.json" \
+            --output "$GITHUB_WORKSPACE/release-drafter.json"
 
       - name: Snapshot releases
         env:
@@ -87,7 +89,7 @@ jobs:
         id: preview
         uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         with:
-          config-name: file:${{ steps.configuration.outputs.config-file }}
+          config-name: file:/release-drafter.json
           dry-run: true
           publish: false
           commitish: ${{ steps.configuration.outputs.sha }}
@@ -108,6 +110,7 @@ jobs:
           "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" prepare \
             --repo "$GITHUB_WORKSPACE/consumer" --head "$SELECTED_SHA" \
             --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
+            --labels "$RUNNER_TEMP/release-labels.json" \
             --snapshot "$RUNNER_TEMP/releases.json"
 
       - name: Open documentation pull request
@@ -180,4 +183,5 @@ jobs:
           "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" update \
             --repo "$GITHUB_WORKSPACE/consumer" --head "$SELECTED_SHA" \
             --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \
+            --labels "$RUNNER_TEMP/release-labels.json" \
             --snapshot "$RUNNER_TEMP/releases.json"

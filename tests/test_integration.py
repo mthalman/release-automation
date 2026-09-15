@@ -208,9 +208,11 @@ class ReleaseLifecycle:
         preset = self.workspace / "drafter.json"
         snapshot = self.workspace / "snapshot.json"
         snapshot.write_text("[]", encoding="utf-8")
+        labels = self.workspace / "labels.json"
+        labels.write_text("[]", encoding="utf-8")
         options = [
             "--repo", str(self.repo), "--default-branch", self.branch,
-            "--head", self.base,
+            "--head", self.base, "--labels", str(labels),
         ]
         if self.config_path:
             options.extend(("--config-path", self.config_path))
@@ -229,7 +231,7 @@ class ReleaseLifecycle:
                 execute()
             with patch("sys.argv", [
                 "run.py", "prepare", *options, "--snapshot", str(snapshot),
-            ]), patch("update_release_draft.api", side_effect=self.fake_api):
+            ]), patch("update_release_draft.api", side_effect=self.fake_api), patch("entrypoint.api", return_value=[]):
                 execute()
         outputs = dict(
             line.split("=", 1) for line in output.read_text(encoding="utf-8").splitlines()
@@ -393,7 +395,10 @@ class ReleaseLifecycle:
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, expected)
         destination = self.workspace / "generated-drafter.json"
-        result = self.run_cli("configuration", "--head", frozen, "--output", str(destination))
+        labels = self.workspace / "labels.json"
+        labels.write_text("[]", encoding="utf-8")
+        result = self.run_cli("configuration", "--head", frozen, "--output", str(destination),
+                              "--labels", str(labels))
         self.assertEqual(result.returncode, 0, result.stderr)
         materialized = json.loads(destination.read_text(encoding="utf-8"))
         self.assertIn(self.config.categories.breaking, json.dumps(materialized))

@@ -20,8 +20,8 @@ credentials, and the final publication gate.
    generated guides and prepare a release.
 
 Installation examples contain
-`@REPLACE_WITH_REVIEWED_COMMIT_SHA`. This is an intentional placeholder before
-the initial implementation is merged, **not a usable workflow reference**.
+`@REPLACE_WITH_REVIEWED_COMMIT_SHA`. This is an installation placeholder,
+**not a usable workflow reference**.
 Replace it in both callers with the same reviewed, reachable, full commit SHA
 from this repository. No floating branch or tag is required.
 
@@ -52,8 +52,10 @@ race limitations.
   repository's actual default branch.
 - Stable tags in the exact form `vMAJOR.MINOR.PATCH`, such as `v2.4.0`.
   Release names contain only the version, such as `2.4.0`.
-- Python 3.13 and Towncrier 26.9.0 in the toolkit; Release Drafter v7.7 and
-  create-pull-request v8.1.1 in SHA-pinned workflows.
+- Pinned Python and Towncrier tooling, with SHA-pinned Release Drafter and
+  create-pull-request workflows. See the [runtime setup](docs/v1/local-development.md#set-up-python),
+  [dependency lock](toolkit/requirements.txt), and
+  [workflow definitions](.github/workflows) for versions at your selected commit.
 - Optional, versioned JSON configuration for paths, labels, and category titles.
   The defaults work without a configuration file.
 
@@ -95,13 +97,12 @@ these local calls from the caller's commit; the
 reusable wrappers still pin the toolkit payload to literal commit P. External
 consumers should continue using the reviewed full-SHA installation examples.
 
-Self-dogfooding becomes active after the workflows merge and maintainers enable
-the required repository settings and labels. It follows the same human review
-and readiness gates: no automatic merge, tag creation, or release publication.
-Initial PR CI passed on Linux and Windows; the end-to-end release drafting and
-human review lifecycle has **not yet been verified live**. See
-[self-dogfooding setup](MAINTAINERS.md#enable-self-dogfooding) for the checks
-needed to verify it.
+Self-dogfooding requires deployed workflows, the required repository settings,
+and canonical labels. It follows the same human review and readiness gates:
+no automatic merge, tag creation, or release publication. Passing toolkit CI
+does not establish that the end-to-end release and human review lifecycle works
+in a particular repository. Follow
+[self-dogfooding setup](MAINTAINERS.md#enable-self-dogfooding) to verify it.
 
 ## License
 
