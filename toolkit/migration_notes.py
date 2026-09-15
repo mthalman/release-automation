@@ -135,8 +135,8 @@ def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
     ]
     if metadata != [f"**Version introduced:** {path[1]}"]:
         raise ValueError(
-            f"{name}: Version introduced must appear exactly once outside examples/comments "
-            "and match its version directory."
+            f"{name}: Version introduced must match its version directory and appear "
+            "exactly once outside examples/comments."
         )
     position, _ = find_section(text, "Breaking changes and migration", level=2)
     if position != -1:
@@ -163,15 +163,18 @@ def pending_guide_versions(text: str | None) -> list[str]:
 
 
 def check_pr(repo: Path, base: str, head: str, labels: list[str], config: Config = DEFAULT) -> None:
-    if config.labels.major in labels and config.labels.skip in labels:
-        raise ValueError("Breaking-change PRs must not use skip-changelog.")
+    label_names = {label.casefold() for label in labels}
+    breaking = config.labels.major.casefold() in label_names
+    if breaking and (config.labels.skip.casefold() in label_names or "skip-changelog" in label_names):
+        exclusion_label = "skip-changelog" if "skip-changelog" in label_names else config.labels.skip
+        raise ValueError(f"Breaking-change PRs must not use {exclusion_label}.")
     branch_base = git(repo, "merge-base", base, head).strip()
     changes = changed_files(repo, branch_base, head, config.fragment_root)
     for status, name in changes:
         if status == "D":
             raise ValueError(f"Keep migration fragments in Git; do not delete or rename {name}.")
         validate_fragment(name, git(repo, "show", f"{head}:{name}"), config)
-    if config.labels.major in labels and not any(status == "A" for status, _ in changes):
+    if breaking and not any(status == "A" for status, _ in changes):
         raise ValueError(
             f"{config.labels.major} PRs must add a new migration fragment in {config.fragment_root}; "
             "editing an existing note does not document a new breaking change."
