@@ -34,15 +34,19 @@ from this repository. No floating branch or tag is required.
 2. `release-draft.yml` selects the latest repository default-branch commit and
    full history. Release Drafter performs a dry run that resolves one version
    and previous release tag.
-3. The workflow renders breaking change fragments with Towncrier and opens or
-   updates an always-draft migration-guide pull request.
+3. The workflow renders breaking change fragments with Towncrier. If generated
+   guides, indexes, or state need changes, it opens or updates a documentation
+   pull request in draft status.
 4. A human marks that pull request ready, runs the repository's checks, reviews
    it, and merges it. Automation updates return the pull request to draft.
 5. A subsequent run verifies the generated files and state on the selected
    branch, rechecks release state and the remote commit, then creates or updates
    only a draft release.
 
-Until step 4 is complete, an existing release draft stays unchanged. See the
+If documentation changes are needed, the run fails at the readiness step and
+leaves an existing release draft unchanged. It does not stay running while
+review is pending. If the selected commit already contains the exact required
+files, no documentation PR or additional review cycle is needed. See the
 [workflow contract](docs/v1/workflows.md) for ordering, trust boundaries, and
 race limitations.
 
@@ -60,8 +64,9 @@ race limitations.
   The defaults work without a configuration file.
 
 Monorepo version streams, prereleases, arbitrary tag prefixes, GitHub Enterprise
-hosts, executable consumer configuration, and consumer migration automation are
-outside v1's scope. There is no PyPI package or installer to deploy.
+hosts, executable consumer configuration, and automatic migration of consumers'
+existing release pipelines are outside v1's scope. There is no PyPI package or
+installer to deploy.
 
 ## Documentation
 
@@ -93,9 +98,9 @@ repository-specific constraints for coding agents.
 The [policy caller](.github/workflows/policy.yml) and
 [release caller](.github/workflows/release.yml) invoke the two reusable
 entrypoints, alongside [toolkit CI](.github/workflows/ci.yml). GitHub resolves
-these local calls from the caller's commit; the
-reusable wrappers still pin the toolkit payload to literal commit P. External
-consumers should continue using the reviewed full-SHA installation examples.
+these local calls from the caller's commit; the reusable wrappers still pin
+the toolkit's code and assets to an immutable commit. External consumers should
+continue using the reviewed full-SHA installation examples.
 
 Self-dogfooding requires deployed workflows, the required repository settings,
 and canonical labels. It follows the same human review and readiness gates:

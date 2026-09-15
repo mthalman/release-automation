@@ -51,11 +51,14 @@ A no-change rerun can leave a PR in the ready-for-review state a human selected;
 draft status is required after creation or an actual update, not after a no-op.
 The workflow still checks its generated label categories.
 
-While documentation is pending, the release workflow waits or fails without
-mutating an existing release draft. This is a review gate, not evidence that
-drafting is broken. The next run must find the **exact** generated docs and
-state on its selected default-branch snapshot; a merely open or approved PR is
-not sufficient.
+While documentation is pending, the run fails at **Wait for merged migration
+guides** without changing an existing release draft. The run ends; it does not
+resume automatically when review finishes. Merge the documentation changes,
+then let the merge trigger a new run or start one manually.
+
+The new run must find the **exact** generated files and state on its selected
+default-branch commit. An open or approved PR is not sufficient. Even a merged
+PR may be insufficient if subsequent changes alter the expected output.
 
 ## Retain source and published history
 
@@ -76,12 +79,11 @@ appear exactly once as that canonical line, outside code fences and HTML
 comments. Fenced or commented examples cannot substitute for the real metadata;
 duplicate or conflicting metadata lines outside examples and comments are
 rejected.
-Topics share the fragment Markdown restrictions: raw HTML outside single-line
-inline code or fenced code examples is rejected. Multiline examples require
-fenced blocks. Ordinary comments remain allowed but do not count as
-instructions. Convert raw HTML and multiline inline code in retained topics
-before adopting this validator; do not remove published history to bypass
-validation.
+
+Topics use the same [supported Markdown format](author-guide.md#use-the-supported-markdown-format)
+as fragments. Convert unsupported formatting in retained topics before
+adopting this validator; do not remove published history to bypass validation.
+
 Root and per-version `README.md` indexes are exempt from the topic section
 schema. Existing legacy guides with a **Breaking changes and migration**
 wrapper remain accepted; new output uses standalone topics.
@@ -119,7 +121,7 @@ credentials and product-specific gates in your own release process.
 | Major PR fails after editing a note | Add a new fragment; editing an older one cannot document a new major change. |
 | Generated PR cannot be created | Check token job permissions, repository Actions policy, and the create-and-approve-PR setting. |
 | Generated PR has no product CI | Have a human mark it ready and ensure CI listens to `ready_for_review`. |
-| Release draft remains unchanged | Inspect the waiting/failing readiness result; merge the exact generated docs and state, then rerun. |
+| Run fails at **Wait for merged migration guides** | Merge the exact generated files and state, then start a new run. The previous run does not resume. |
 | Run reports a changed remote commit or release | Let current work settle and rerun from the latest default-branch snapshot; do not bypass checks. |
 | No draft run after guide merge | Manually dispatch; bot-token event suppression can prevent a follow-up run. |
 | Version or category is unexpected | Review merged PR labels, skip pre-exclusion, highest conflicting bump, and patch fallback. |

@@ -19,9 +19,10 @@ as a contributor convention:
 | Other maintenance | `semver:patch` | None |
 
 The migration policy does not globally enforce exactly-one version label or
-at-most-one category label. Release Drafter retains its highest-conflicting-bump
-behavior and patch fallback. Missing or conflicting labels can therefore
-produce a draft rather than fail; maintainers must review them.
+at-most-one category label. If version labels conflict, Release Drafter selects
+the largest requested bump: major before minor before patch. If no label
+requests a larger bump, it selects patch. Missing or conflicting labels can
+therefore produce a draft rather than fail; maintainers must review them.
 
 `semver:major` takes precedence in the unified **Breaking Changes** category.
 Other exclusive categories are **Features**, **Bug Fixes**, **Documentation**,
@@ -37,7 +38,7 @@ Policy compares major and exclusion labels case-insensitively, so changing a
 label's capitalization does not bypass the fragment requirement or exclusion
 check. If your repository renames the exclusion label in configuration,
 breaking PRs still cannot use canonical `skip-changelog` or the configured
-exclusion label. This does not add general label-count enforcement.
+exclusion label.
 
 ## Include labeling rules in AGENTS.md
 
@@ -115,8 +116,11 @@ invalid. Titles, required headings, and their instructions must be visible:
 HTML comments cannot supply them, even when a comment spans multiple sections.
 Literal HTML-comment examples inside single-line inline code spans or fenced
 code blocks remain unchanged.
+
 Keep the title as the only H3; body headings are H4 or deeper. Do not
 insert reserved migration-note or topic markers.
+
+## Use the supported Markdown format
 
 Raw HTML is not supported outside code examples. Use Markdown rather than
 elements such as `<div>`, `<details>`, or `<script>`; HTML declarations,
@@ -133,9 +137,9 @@ Before adopting or upgrading the toolkit, convert raw HTML in retained
 fragments and migration topics to Markdown or code examples, and convert
 multiline inline code spans to fenced blocks.
 
-Use fenced code blocks for examples. The renderer preserves heading-like code
-and literal strings such as `$OWNER`; do not pre-expand or escape them merely
-because Release Drafter also uses dollar-prefixed variables.
+The renderer preserves heading-like code and literal strings such as `$OWNER`
+inside fenced examples. Do not pre-expand or escape them merely because
+Release Drafter also uses dollar-prefixed variables.
 
 ## Preview committed content
 

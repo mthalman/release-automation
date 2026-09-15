@@ -31,8 +31,7 @@ examples above use Python 3.13. The [dependency lock](../../toolkit/requirements
 pins the complete rendering dependency set and any platform-specific markers.
 Install from that file rather than maintaining a separate package list.
 
-Install from the requirements file instead of selecting dependencies
-individually. You do not need to install this project from PyPI.
+You do not need to install this project from PyPI.
 
 ## Preview migration notes
 
@@ -86,8 +85,9 @@ python -I toolkit\run.py check --repo C:\path\to\consumer --event event.json --d
 
 Add `--config-path .github/release-automation.json` when appropriate. Check
 loads configuration and deletion-authorizing state from the event's PR base,
-not from proposed head configuration. A successful check exits with
-status zero; invalid policy input fails with a diagnostic.
+not from proposed head configuration. A successful check prints
+`Migration note policy passed.` and exits with status zero; invalid policy
+input fails with a diagnostic.
 
 `-I` enables Python isolated mode. Invoke `toolkit/run.py` from the trusted
 toolkit checkout, not a script supplied by the consumer PR. The local command

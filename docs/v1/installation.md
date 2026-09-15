@@ -1,8 +1,10 @@
 # Install the workflows
 
 This guide installs migration policy checks and draft generation in one
-github.com repository. You need permission to configure GitHub Actions, create
-labels, and edit workflows.
+github.com repository.
+
+Before you begin, confirm that you can configure GitHub Actions, create labels,
+edit workflows, and merge changes through the repository's review process.
 
 The repository must use one stable release stream with `vMAJOR.MINOR.PATCH`
 tags on its actual default branch. Existing stable release history must be
@@ -14,8 +16,7 @@ pipelines or create a first published release for you.
 Choose a reviewed, reachable, full commit SHA from
 `mthalman/release-automation` and use it in **both** callers below.
 `REPLACE_WITH_REVIEWED_COMMIT_SHA` is an installation placeholder, not a real
-ref. Do not paste the examples
-unchanged and expect Actions to resolve them.
+ref. Replace it before committing the examples.
 
 The selected wrapper commit already pins its toolkit payload. You do not supply
 a second tooling ref. Keep both caller refs synchronized on future upgrades.
@@ -49,8 +50,8 @@ or your normal label-management process:
 | `dependencies` | Dependencies category |
 
 Colors and descriptions are your choice. If you override label names, create
-the configured names instead and share them
-with contributors. See the [author guide](author-guide.md#choose-labels).
+the configured names instead and share them with contributors. See the
+[author guide](author-guide.md#choose-labels).
 
 ## 4. Add the policy caller
 
@@ -111,8 +112,9 @@ default-branch snapshot, not an arbitrary dispatch branch.
 
 ## 6. Optionally commit configuration
 
-Omit `with` to use all defaults. To customize supported settings, commit a JSON
-file outside the fragment, guide, and state paths, then add this to each job:
+Omit `with` to use all defaults. To customize supported settings, first merge a
+JSON configuration file outside the fragment, guide, and state paths. Then add
+this input to each caller job:
 
 ```yaml
     with:
@@ -129,7 +131,9 @@ A minimal configuration file is:
 
 When `config-path` is supplied, the file must exist at the trusted commit.
 Policy reads it at the PR base; drafting reads it at the selected default-branch
-HEAD. Land the configuration before expecting it to govern a PR check. See
+HEAD. Adding the file only in the PR being checked cannot supply base
+configuration. Likewise, a proposed configuration change takes effect for
+policy checks only after it is merged into their base. See
 the [configuration reference](configuration.md) for the full schema.
 
 ## 7. Verify the deployment
@@ -145,14 +149,17 @@ check in your ruleset. Do not guess the nested name from these examples.
 The toolkit never changes rulesets automatically.
 
 Run the draft workflow and inspect its result. When new guides are needed, it
-should create a draft documentation PR and leave release drafting waiting until
-the exact generated files and state are merged.
+should create a draft documentation PR, then fail at **Wait for merged migration
+guides** without changing an existing release draft. This expected failure ends
+the run; it does not pause a runner until review finishes.
 
 A PR created with `GITHUB_TOKEN` does not automatically trigger your normal PR
 CI. A **human must mark it ready for review** to generate a
 `ready_for_review` event. Ensure your product CI listens to that event.
 Automation updates return the PR to draft, so repeat the human readiness step
-after updates. See [reviewing generated changes](maintainer-guide.md#review-the-generated-pull-request).
+after updates. Once the exact generated files and state are merged, start a new
+draft run if the merge does not trigger one. See
+[reviewing generated changes](maintainer-guide.md#review-the-generated-pull-request).
 
 Installation is verified only after you observe policy validation, the human
 review/CI path, and a successful post-merge draft run in your own repository.

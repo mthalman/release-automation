@@ -101,6 +101,10 @@ then `go -C tools mod tidy`, and review the resulting module changes.
 Changes confined to this development module do not require a toolkit payload
 refresh.
 
+Dependabot proposes dependency updates; it does not eliminate tool maintenance.
+Keep the module's Go version supported, review new lint findings, and resolve
+build incompatibilities before merging an update.
+
 Consumers upgrade both workflow references together in a reviewed pull
 request. Keep the v1 documentation at the upgrade commit consistent with the
 wrappers and payload. No PyPI release or installer publication is needed.

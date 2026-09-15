@@ -66,11 +66,13 @@ The validator checks fragment naming and section content, new-fragment
 requirements for major PRs, the major/skip conflict, guide structure, and
 retention rules. These checks do not enforce every label convention or replace
 consumer product tests.
+
 Fragment and topic validation supports a constrained Markdown format: raw HTML
 outside code examples is rejected, and ordinary comments cannot supply required
 headings or content. Inline code is restricted to a single source line;
 multiline examples require fenced code blocks. This keeps the trusted validator
 standard-library-only; it is not a general-purpose CommonMark or HTML renderer.
+
 Major and exclusion label comparisons are case-insensitive. A breaking PR
 cannot use either the configured exclusion label or canonical
 `skip-changelog`, even when the configured exclusion label has another name.
@@ -118,11 +120,12 @@ The run follows this order:
    preserve a human-selected ready-for-review state, but it does not skip label
    validation. Do not trust action success alone or silently accept conflicting
    generated PR labels.
-6. **Wait for committed readiness.** If the selected branch does not contain
-   the exact generated docs and state, report waiting/failure and stop before
-   any draft-release write. Leave an existing draft unchanged. Human review and
-   merge are required; a matching file only on the automation branch is not
-   ready.
+6. **Require committed files.** If the selected default-branch commit does not
+   contain the exact generated files and state, fail the run before any
+   draft-release write. Leave an existing draft unchanged. The step named
+   **Wait for merged migration guides** ends the run; it does not suspend it.
+   Human review, merge, and a new run are required. Matching files only on the
+   automation branch are not sufficient.
 7. **Recheck mutable state.** Re-read releases, the remote selected-branch
    commit, relevant label spellings, and readiness. Stop if assumptions changed.
 8. **Write only a draft.** Only after those checks, POST a new draft release or

@@ -3,11 +3,11 @@
 Both reusable workflows accept the same single optional input, `config-path`.
 An empty string or omitted input selects the defaults. A nonempty value names
 a committed JSON file; if that file is absent at the selected trusted commit,
-validation fails.
+validation fails. In this reference, the **trusted commit** means the PR base
+commit for policy checks and the selected default-branch commit for drafting.
 
-Policy loads configuration from the PR base Git object. Drafting loads it from
-the selected default-branch HEAD Git object. Neither loads configuration from
-an arbitrary checked-out or uncommitted worktree.
+Both workflows read configuration directly from that commit's Git objects,
+not from an arbitrary checked-out or uncommitted worktree.
 
 ## Complete defaults
 
@@ -154,7 +154,7 @@ tracks pending versions:
 ```
 
 This is a schema example, not a file to create during installation. Let
-automation generate and review state together with the guides. Pending-version
-cleanup authority comes from state at the PR base; proposed state cannot
+automation generate state, then review it together with the guides.
+Pending-version cleanup authority comes from state at the PR base; proposed state cannot
 authorize its own deletions. See
 [history retention](maintainer-guide.md#retain-source-and-published-history).
