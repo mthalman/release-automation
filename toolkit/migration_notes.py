@@ -260,9 +260,8 @@ def pending_guide_versions(text: str | None) -> list[str]:
 def check_pr(repo: Path, base: str, head: str, labels: list[str], config: Config = DEFAULT) -> None:
     label_names = {label.casefold() for label in labels}
     breaking = config.labels.major.casefold() in label_names
-    if breaking and (config.labels.skip.casefold() in label_names or "skip-changelog" in label_names):
-        exclusion_label = "skip-changelog" if "skip-changelog" in label_names else config.labels.skip
-        raise ValueError(f"Breaking-change PRs must not use {exclusion_label}.")
+    if breaking and config.labels.skip.casefold() in label_names:
+        raise ValueError(f"Breaking-change PRs must not use {config.labels.skip}.")
     branch_base = git(repo, "merge-base", base, head).strip()
     changes = changed_files(repo, branch_base, head, config.fragment_root)
     for status, name in changes:

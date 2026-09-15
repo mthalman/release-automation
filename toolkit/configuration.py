@@ -70,12 +70,6 @@ def string_overrides(kind, values):
     result = kind(**values)
     if len({value.casefold() for value in asdict(result).values()}) != len(asdict(result)):
         raise ValueError(f"{kind.__name__} must have distinct values.")
-    if kind is Labels:
-        for key, value in asdict(result).items():
-            if value.casefold() == "skip-changelog" and key != "skip":
-                raise ValueError("The skip-changelog label is reserved for exclusion.")
-            if value.casefold().startswith("semver:") and key not in ("major", "minor", "patch"):
-                raise ValueError("The semver: label namespace is reserved for version increments.")
     return result
 
 

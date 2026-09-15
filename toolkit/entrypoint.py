@@ -39,10 +39,15 @@ def verify_documentation_pr(pr: dict, config: Config, *, require_draft: bool = T
     }
     categories = {name.casefold() for name in categories}
     if ((require_draft and pr["draft"] is not True)
-            or [label for label in labels if label in semver or label.startswith("semver:")] != [config.labels.patch.casefold()]
+            or [label for label in labels if label in semver] != [config.labels.patch.casefold()]
             or [label for label in labels if label in categories] != [config.labels.documentation.casefold()]
-            or config.labels.skip.casefold() in labels or "skip-changelog" in labels):
-        raise ValueError("Documentation PR must be draft with only the configured patch/category labels and no skip-changelog.")
+            or config.labels.skip.casefold() in labels):
+        draft_rule = "must be draft and " if require_draft else "must "
+        raise ValueError(
+            f"Documentation PR {draft_rule}have {config.labels.patch} and "
+            f"{config.labels.documentation}, no other configured version/category labels, "
+            f"and no {config.labels.skip}."
+        )
 
 
 def execute() -> None:
