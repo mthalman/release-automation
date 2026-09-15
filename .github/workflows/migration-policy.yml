@@ -53,9 +53,12 @@ jobs:
       - name: Fetch PR head only as Git data
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           [[ "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
-          git -C "$GITHUB_WORKSPACE/consumer" fetch --no-tags origin "$PR_HEAD_SHA"
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          git -C "$GITHUB_WORKSPACE/consumer" fetch --no-tags origin "refs/pull/$PR_NUMBER/head"
+          test "$(git -C "$GITHUB_WORKSPACE/consumer" rev-parse FETCH_HEAD)" = "$PR_HEAD_SHA"
 
       - name: Validate using immutable toolkit and base configuration
         env:
