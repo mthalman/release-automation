@@ -247,6 +247,8 @@ def previous_tag(preview: str) -> str | None:
     marker = re.match(r"\A<!-- migration-base: ([^\r\n]*?) -->", preview)
     if not marker:
         raise ValueError("Release Drafter preview is missing its migration-base marker.")
+    if marker[1] and not STABLE_TAG.fullmatch(marker[1]):
+        raise ValueError("Release Drafter previous tag must be a stable vMAJOR.MINOR.PATCH tag.")
     return marker[1] or None
 
 
