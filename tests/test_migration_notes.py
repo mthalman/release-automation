@@ -1166,7 +1166,7 @@ class MigrationGuideTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "heading"):
                     validate_guide(
                         "docs/migrations/3.0.0/document-parsing-errors.md",
-                        f"{fence}markdown\n{topic}{fence}\n",
+                        f"**Version introduced:** 3.0.0\n\n{fence}markdown\n{topic}{fence}\n",
                     )
 
     def test_versioned_topic_ignores_migration_heading_in_fenced_preamble(self):

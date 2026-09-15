@@ -98,7 +98,8 @@ consumers should continue using the reviewed full-SHA installation examples.
 Self-dogfooding becomes active after the workflows merge and maintainers enable
 the required repository settings and labels. It follows the same human review
 and readiness gates: no automatic merge, tag creation, or release publication.
-The initial configuration has **not yet been validated in live Actions**. See
+Initial PR CI passed on Linux and Windows; the end-to-end release drafting and
+human review lifecycle has **not yet been verified live**. See
 [self-dogfooding setup](MAINTAINERS.md#enable-self-dogfooding) for the checks
 needed to verify it.
 

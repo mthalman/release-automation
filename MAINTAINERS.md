@@ -132,7 +132,8 @@ repository only. A read-only inspection found
 The create-and-approve-PR setting still needs maintainer action before PR
 creation can be verified.
 
-The initial setup has not yet been validated in live GitHub Actions. Merged
+Initial PR CI passed on Linux and Windows. That run does not establish live
+validation of subsequent review fixes or the end-to-end release lifecycle. Merged
 workflow files alone do not prove permissions, token event behavior, or
 review/merge integration. Self-dogfooding creates no automatic merge, tag, or
 published release, and does not replace independent publication gates.

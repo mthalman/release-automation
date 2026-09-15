@@ -51,6 +51,10 @@ The caller listens for `opened`, `reopened`, `synchronize`, `labeled`,
 Policy evaluates proposed file contents as data. Its trusted executable is an
 immutable, standard-library-only validator from P. It does not execute PR
 Python, PR workflows, consumer templates, or PR dependency installation.
+The workflow fetches `refs/pull/<number>/head` as Git data and requires
+`FETCH_HEAD` to match the event's head SHA exactly. It never checks out that
+head. If the PR head has changed since the event, the stale run fails rather
+than validating a different revision.
 
 Configuration and pending-state deletion authority come from the exact PR
 base Git objects. A PR cannot weaken its own checks by changing its proposed
@@ -60,6 +64,9 @@ The validator checks fragment naming and section content, new-fragment
 requirements for major PRs, the major/skip conflict, guide structure, and
 retention rules. These checks do not enforce every label convention or replace
 consumer product tests.
+Major and exclusion label comparisons are case-insensitive. A breaking PR
+cannot use either the configured exclusion label or canonical
+`skip-changelog`, even when the configured exclusion label has another name.
 
 The installation caller job ID is `migration-policy`; the callee job name is
 **Validate migration notes**. Discover GitHub's actual nested check name after
@@ -80,6 +87,9 @@ The run follows this order:
    the materialized locked preset. Resolve a single version and previous
    release tag, then carry that result through generation and draft mutation.
    Do not independently calculate a second version later.
+   The preview's previous-tag marker must be empty for an initial release or
+   contain exactly a stable `vMAJOR.MINOR.PATCH` tag. Prerelease suffixes, build
+   metadata, and other refs are rejected.
 3. **Generate migration content.** Render retained breaking fragments using
    toolkit-owned Towncrier assets. Produce standalone topics, indexes, and
    pending-version state. Preserve published guides and reviewed corrections;

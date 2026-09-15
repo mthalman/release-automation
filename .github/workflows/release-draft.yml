@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: mthalman/release-automation
-          ref: f33955bc99fdaed5eaddc656a1fafc4211e69433
+          ref: 96d426e6a52dc46a098e24029ab1da1d7f0230cd
           path: _release-automation
           persist-credentials: false
 

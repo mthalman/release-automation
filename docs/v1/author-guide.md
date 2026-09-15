@@ -34,6 +34,44 @@ For a non-breaking change that should not appear in release notes, use
 version resolution. **Never combine `semver:major` and `skip-changelog`: policy
 rejects it.** Do not hide a breaking change by removing its major label.
 
+Policy compares major and exclusion labels case-insensitively, so changing a
+label's capitalization does not bypass the fragment requirement or exclusion
+check. If your repository renames the exclusion label in configuration,
+breaking PRs still cannot use canonical `skip-changelog` or the configured
+exclusion label. This does not add general label-count enforcement.
+
+## Include labeling rules in AGENTS.md
+
+Include the labeling rules in your consuming repository's `AGENTS.md` so coding
+agents apply them when opening or updating pull requests, rather than relying
+on a human to correct labels afterward. This is particularly useful because
+the workflow does not enforce the general label-count convention.
+
+Link to this author guide at the same reviewed commit as your workflow pins,
+and summarize the expected behavior locally. For example:
+
+```markdown
+## Pull request release labels
+
+- Follow the shared release-automation author guide linked in this repository.
+- Before opening or updating a PR, assess its release impact and apply exactly
+  one version label: semver:major, semver:minor, or semver:patch.
+- Apply at most one category label: enhancement, bug, documentation, or
+  dependencies. Use no category for other maintenance; do not use type:* aliases.
+- For breaking changes, use semver:major and add a new completed migration
+  fragment. Never combine a breaking change with skip-changelog.
+- Use skip-changelog only for intentionally excluded non-breaking changes.
+- Honor the repository's configured label names and fragment path. Recheck
+  labels when the scope of a PR changes, removing conflicting labels.
+- If label permissions are unavailable or the release impact is unclear,
+  report that explicitly for maintainer review rather than silently skipping it.
+```
+
+Replace the example's default names with configured equivalents and add the
+pinned guide link before adopting it. Keep that link and the local summary in
+sync when upgrading the workflows. Agent instructions guide behavior; they do
+not replace human review or add a new executable policy check.
+
 ## Add a breaking fragment
 
 1. Add a new file directly under `.changes`, using the name

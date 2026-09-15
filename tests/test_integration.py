@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import sys
 import unittest
@@ -463,7 +464,7 @@ class ReleaseLifecycle:
         self.assertIn(links.strip(), body)
         if self.overrides:
             self.assertNotIn("### Breaking Changes", body)
-            with self.assertRaisesRegex(ValueError, "skip-changelog"):
+            with self.assertRaisesRegex(ValueError, re.escape(self.config.labels.skip)):
                 check_pr(self.repo, self.base, self.git("rev-parse", "HEAD"),
                          [self.config.labels.major, self.config.labels.skip], self.config)
 

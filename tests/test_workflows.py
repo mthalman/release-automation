@@ -87,6 +87,36 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertNotIn("pull-requests: write", text)
         self.assertNotIn("contents: write", text)
 
+    def test_fetching_pull_ref_preserves_trusted_base_checkout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source"
+            consumer = Path(directory) / "consumer"
+            source.mkdir()
+
+            def git(repo, *args):
+                return subprocess.check_output(
+                    ["git", *args], cwd=repo, stderr=subprocess.PIPE, text=True,
+                ).strip()
+
+            git(source, "init", "-q", "-b", "main")
+            git(source, "config", "user.name", "Pull ref fixture")
+            git(source, "config", "user.email", "fixture@example.invalid")
+            git(source, "commit", "--allow-empty", "-qm", "Trusted base")
+            base = git(source, "rev-parse", "HEAD")
+            git(source, "checkout", "--detach")
+            (source / "head-only.txt").write_text("Untrusted PR data\n", encoding="utf-8")
+            git(source, "add", ".")
+            git(source, "commit", "-qm", "Fork-only commit")
+            head = git(source, "rev-parse", "HEAD")
+            git(source, "update-ref", "refs/pull/7/head", head)
+            git(source, "checkout", "main")
+            git(Path(directory), "clone", "-q", str(source), str(consumer))
+            git(consumer, "fetch", "--no-tags", "origin", "refs/pull/7/head")
+            self.assertEqual(head, git(consumer, "rev-parse", "FETCH_HEAD"))
+            self.assertNotEqual(base, git(consumer, "rev-parse", "FETCH_HEAD"))
+            self.assertEqual(base, git(consumer, "rev-parse", "HEAD"))
+            self.assertFalse((consumer / "head-only.txt").exists())
+
     def test_draft_serializes_entire_lifecycle(self):
         text = (WORKFLOWS / "release-draft.yml").read_text(encoding="utf-8")
         self.assertIn("group: release-drafter\n  cancel-in-progress: false", text)

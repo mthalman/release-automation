@@ -71,7 +71,11 @@ not sufficient.
 By default, standalone topics live at
 `docs/migrations/MAJOR.MINOR.PATCH/slug.md`. New topics have an H1 title, an exact
 `**Version introduced:** MAJOR.MINOR.PATCH` line matching their directory, and
-the same six sections as fragments, promoted to H2.
+the same six sections as fragments, promoted to H2. The version metadata must
+appear exactly once as that canonical line, outside code fences and HTML
+comments. Fenced or commented examples cannot substitute for the real metadata;
+duplicate or conflicting metadata lines outside examples and comments are
+rejected.
 Root and per-version `README.md` indexes are exempt from the topic section
 schema. Existing legacy guides with a **Breaking changes and migration**
 wrapper remain accepted; new output uses standalone topics.
