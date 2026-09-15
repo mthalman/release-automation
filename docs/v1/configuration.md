@@ -90,10 +90,17 @@ colons, underscores, periods, or hyphens. Values must be distinct
 case-insensitively within the resolved label set and within the resolved
 category set, including defaults retained by partial overrides.
 
-The `semver:` label namespace is reserved for the `major`, `minor`, and `patch`
-settings. The literal `skip-changelog` label is reserved for the `skip` setting.
-These reservations are also case-insensitive; category label overrides cannot
-use them to bypass generated-PR checks.
+Every label role comes only from the resolved `labels` configuration. No label
+name or namespace is reserved. A name such as `skip-changelog` or `semver:major`
+can be assigned to any role, provided all eight resolved identities remain
+distinct case-insensitively and satisfy the syntax constraints above. For
+example, assigning `skip-changelog` to `documentation` also requires overriding
+`skip` to a different, distinct name.
+
+After a default name is overridden, the former name has no special meaning
+unless explicitly assigned to a role. Unrelated labels do not count as
+configured version, category, or exclusion labels. Likewise, category titles
+come from resolved `categories` settings, not fixed heading text.
 
 For example, this partial override is valid:
 
@@ -114,6 +121,17 @@ Create `release:major` and `docs` in the consumer repository, keep the other
 default labels, and update contributor guidance. The toolkit maps these
 supported overrides coherently across validation, version resolution,
 generated PR labels, and release categories.
+
+In this example, `semver:major` no longer selects a major bump or triggers the
+major-label fragment requirement, and `documentation` no longer supplies the
+documentation category. The configured `release:major` and `docs` labels
+provide those roles instead. A breaking change must use the configured major
+label and add a new valid fragment; it cannot use the configured skip label.
+
+Generated PRs must have exactly the configured `patch` and `documentation`
+labels among configured version and category labels, and no configured `skip`
+label. Unrelated labels are allowed. Draft status is required after creation
+or an actual update; a no-op rerun can preserve a human-selected ready state.
 
 Before previewing a release, the workflow snapshots repository labels and
 resolves configured names to their actual GitHub spellings, matching label

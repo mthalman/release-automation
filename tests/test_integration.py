@@ -486,11 +486,16 @@ class ReleaseLifecycle:
             self.config.labels.major, self.config.labels.minor,
             self.config.labels.feature, self.config.labels.fix,
             self.config.labels.dependencies, self.config.labels.skip,
-            "semver:unexpected", "SemVer:unexpected", "skip-changelog", "SKIP-CHANGELOG",
         ):
             with self.subTest(extra=extra), self.assertRaises(ValueError):
                 verify_documentation_pr(
                     {**ready, "labels": [*expected, {"name": extra}]},
+                    self.config, require_draft=False,
+                )
+        for unrelated in ("semver:unexpected", "SemVer:unexpected", "triaged"):
+            with self.subTest(unrelated=unrelated):
+                verify_documentation_pr(
+                    {**ready, "labels": [*expected, {"name": unrelated}]},
                     self.config, require_draft=False,
                 )
         for missing in range(len(expected)):

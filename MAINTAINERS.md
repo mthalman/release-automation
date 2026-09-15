@@ -16,7 +16,9 @@ Before accepting a change:
 - Run unit tests with Python 3.13 and pinned dependencies; run `actionlint` for
   workflow edits.
 - Check default-branch discovery, stable-tag restrictions, label mapping, and
-  configuration rejection cases.
+  configuration rejection cases. Every label role must come from resolved
+  configuration, with no reserved names or namespaces. Check that partial
+  overrides preserve case-insensitive distinctness across all eight labels.
 - Verify policy uses base configuration and state without executing PR code.
 - Verify draft mutation follows exact committed-document/state readiness and
   fresh remote/release checks. No waiting path may rewrite an existing draft.
@@ -136,8 +138,10 @@ When enabling self-dogfooding, or verifying it after an upgrade:
 1. Enable the required Actions policies and **Allow GitHub Actions to create
    and approve pull requests**, as described in
    [installation](docs/v1/installation.md#2-enable-repository-permissions).
-2. Confirm the canonical labels exist and that the draft caller targets the
-   repository's actual default branch.
+2. Confirm the configured labels exist (the default names for this repository's
+   default setup) and that the draft caller targets the repository's actual
+   default branch. This repository's Dependabot label settings are static;
+   keep them aligned if changing its release-automation label configuration.
 3. Exercise the policy caller on a test PR. Discover its actual nested check
    name before configuring a required-check ruleset.
 4. Run toolkit CI and manually dispatch drafting. If guides are generated,

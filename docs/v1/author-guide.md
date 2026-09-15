@@ -2,43 +2,53 @@
 
 Use pull request labels to describe the release impact of your change. For a
 breaking change, add a migration fragment before requesting review. Paths and
-labels below are defaults; use your repository's configured equivalents.
+label names below are defaults; use your repository's resolved configuration.
+The `labels` settings assign label roles, and `categories` sets release-note
+category titles. Omitted settings retain their defaults.
 
 ## Choose labels
 
-Use **exactly one** semantic-version label and **at most one** category label
-as a contributor convention:
+Use **exactly one** configured version label and **at most one** configured
+category label as a contributor convention:
 
-| Change | Version label | Optional category label |
+| Change | Version role (default label) | Optional category role (default label) |
 | --- | --- | --- |
-| Breaking behavior or API change | `semver:major` | The relevant category, if needed |
-| Backward-compatible feature | `semver:minor` | `enhancement` |
-| Bug fix | `semver:patch` | `bug` |
-| Documentation | `semver:patch` | `documentation` |
-| Dependency update | The appropriate semantic-version label | `dependencies` |
-| Other maintenance | `semver:patch` | None |
+| Breaking behavior or API change | `major` (`semver:major`) | The relevant category, if needed |
+| Backward-compatible feature | `minor` (`semver:minor`) | `feature` (`enhancement`) |
+| Bug fix | `patch` (`semver:patch`) | `fix` (`bug`) |
+| Documentation | `patch` (`semver:patch`) | `documentation` (`documentation`) |
+| Dependency update | The appropriate version role | `dependencies` (`dependencies`) |
+| Other maintenance | `patch` (`semver:patch`) | None |
 
 The migration policy does not globally enforce exactly-one version label or
-at-most-one category label. If version labels conflict, Release Drafter selects
-the largest requested bump: major before minor before patch. If no label
-requests a larger bump, it selects patch. Missing or conflicting labels can
-therefore produce a draft rather than fail; maintainers must review them.
+at-most-one category label. If configured version labels conflict, Release
+Drafter selects the largest requested bump: major before minor before patch.
+If no configured label requests a larger bump, it selects patch. Missing or
+conflicting labels can therefore produce a draft rather than fail; maintainers
+must review them.
 
-`semver:major` takes precedence in the unified **Breaking Changes** category.
-Other exclusive categories are **Features**, **Bug Fixes**, **Documentation**,
-and **Dependencies**, followed by **Maintenance** as the fallback. Dependencies
-collapse after five entries.
+The configured `major` label takes precedence in the unified `breaking`
+category (default title: **Breaking Changes**). Other exclusive category roles
+are `feature`, `fix`, `documentation`, and `dependencies`, followed by
+`maintenance` as the fallback. Their default titles are **Features**, **Bug
+Fixes**, **Documentation**, **Dependencies**, and **Maintenance**, respectively.
+The dependencies category collapses after five entries.
 
 For a non-breaking change that should not appear in release notes, use
-`skip-changelog`. Release Drafter pre-excludes that PR before category and
-version resolution. **Never combine `semver:major` and `skip-changelog`: policy
-rejects it.** Do not hide a breaking change by removing its major label.
+the configured `skip` label (default: `skip-changelog`). Release Drafter
+pre-excludes that PR before category and version resolution. **Never combine
+the configured `major` and `skip` labels: policy rejects it.** Do not hide a
+breaking change by removing its configured major label.
 
-Policy compares major and exclusion labels case-insensitively, so changing a
-label's capitalization does not bypass the fragment requirement or exclusion
-check. If your repository renames the exclusion label in configuration,
-breaking PRs still cannot use canonical `skip-changelog` or the configured
-exclusion label.
+Label identities are case-insensitive. Policy uses only the configured `major`
+and `skip` identities for the fragment requirement and exclusion conflict.
+After an override, the former name has no special meaning unless explicitly
+assigned to a role. There are no reserved label names or namespaces:
+`skip-changelog` or a `semver:*` name can serve any role, provided all eight
+resolved labels remain distinct case-insensitively and satisfy the
+[syntax constraints](configuration.md#branch-label-and-title-constraints).
+Unrelated labels do not count as configured version, category, or exclusion
+labels.
 
 ## Include labeling rules in AGENTS.md
 
@@ -54,23 +64,38 @@ and summarize the expected behavior locally. For example:
 ## Pull request release labels
 
 - Follow the shared release-automation author guide linked in this repository.
+- Resolve configuration before choosing labels or fragment paths. Inspect the
+  reusable workflow callers' optional config-path at the trusted PR base (or
+  the selected default-branch commit when preparing a PR). Discover the actual
+  default branch from GitHub repository metadata, not an assumed branch name.
+  Read the configured JSON file from that commit and merge its partial
+  overrides with the toolkit defaults. With no config-path, use the defaults.
+  Do not use proposed PR configuration as the authority for its own checks.
 - Before opening or updating a PR, assess its release impact and apply exactly
-  one version label: semver:major, semver:minor, or semver:patch.
-- Apply at most one category label: enhancement, bug, documentation, or
-  dependencies. Use no category for other maintenance.
-- For breaking changes, use semver:major and add a new completed migration
-  fragment. Never combine a breaking change with skip-changelog.
-- Use skip-changelog only for intentionally excluded non-breaking changes.
-- Honor the repository's configured label names and fragment path. Recheck
-  labels when the scope of a PR changes, removing conflicting labels.
+  one of the resolved labels.major, labels.minor, or labels.patch values.
+- Apply at most one of the resolved labels.feature, labels.fix,
+  labels.documentation, or labels.dependencies values. Use no category label
+  for other maintenance.
+- For breaking changes, apply the resolved labels.major value and add a new
+  completed migration fragment under the resolved fragment_root. Never combine
+  a breaking change with the resolved labels.skip value.
+- Use the resolved labels.skip value only for intentionally excluded
+  non-breaking changes. Label roles come only from resolved configuration:
+  former default names have no special meaning unless assigned to a role.
+- Defaults, used only where not overridden: major=semver:major,
+  minor=semver:minor, patch=semver:patch, skip=skip-changelog,
+  feature=enhancement, fix=bug, documentation=documentation,
+  dependencies=dependencies; fragment_root=.changes.
+- Recheck labels when the scope of a PR changes, removing conflicting
+  configured labels. Unrelated labels do not count toward these conventions.
 - If label permissions are unavailable or the release impact is unclear,
   report that explicitly for maintainer review rather than silently skipping it.
 ```
 
-Replace the example's default names with configured equivalents and add the
-pinned guide link before adopting it. Keep that link and the local summary in
-sync when upgrading the workflows. Agent instructions guide behavior; they do
-not replace human review or add a new executable policy check.
+Add the pinned guide link before adopting the example. Keep that link and the
+local summary in sync when upgrading the workflows. Resolve configured values
+rather than copying default names as permanent rules. Agent instructions guide
+behavior; they do not replace human review or add a new executable policy check.
 
 ## Add a breaking fragment
 
@@ -95,9 +120,10 @@ The filename uses lowercase ASCII letters, digits, and single hyphen-separated
 words. The leading `+` and `.breaking.md` suffix are required. Do not use the
 reserved slug `readme` or nested directories.
 
-A major PR must **add** a new valid fragment. Editing an existing fragment does
-not satisfy the requirement to document a new breaking change. Fragments are
-retained in Git forever: do not delete or rename them after a release.
+A PR with the configured `major` label must **add** a new valid fragment.
+Editing an existing fragment does not satisfy the requirement to document a
+new breaking change. Fragments are retained in Git forever: do not delete or
+rename them after a release.
 Non-breaking PRs do not need migration fragments; normal release-note entries
 come from their titles and labels.
 

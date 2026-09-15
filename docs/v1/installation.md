@@ -33,24 +33,28 @@ caller needs only `contents: read`. Both use the repository's automatic
 `GITHUB_TOKEN`; no external secret, personal access token, or `secrets: inherit`
 is required.
 
-## 3. Create the canonical labels
+## 3. Create configured labels
 
-Create these labels in the consuming repository through GitHub's Labels page
-or your normal label-management process:
+Create the resolved label names in the consuming repository through GitHub's
+Labels page or your normal label-management process. Without overrides, use
+these defaults:
 
-| Label | Purpose |
-| --- | --- |
-| `semver:major` | Breaking change; requires a new breaking fragment |
-| `semver:minor` | Backward-compatible feature bump |
-| `semver:patch` | Patch bump |
-| `skip-changelog` | Exclude a non-breaking PR from release notes |
-| `enhancement` | Features category |
-| `bug` | Bug Fixes category |
-| `documentation` | Documentation category |
-| `dependencies` | Dependencies category |
+| Configured role | Default label | Purpose |
+| --- | --- | --- |
+| `labels.major` | `semver:major` | Breaking change; requires a new breaking fragment |
+| `labels.minor` | `semver:minor` | Backward-compatible feature bump |
+| `labels.patch` | `semver:patch` | Patch bump |
+| `labels.skip` | `skip-changelog` | Exclude a non-breaking PR from release notes |
+| `labels.feature` | `enhancement` | Feature category (default title: Features) |
+| `labels.fix` | `bug` | Fix category (default title: Bug Fixes) |
+| `labels.documentation` | `documentation` | Documentation category (default title: Documentation) |
+| `labels.dependencies` | `dependencies` | Dependencies category (default title: Dependencies) |
 
 Colors and descriptions are your choice. If you override label names, create
-the configured names instead and share them with contributors. See the
+the configured names instead and share them with contributors. Overrides merge
+with defaults; all eight resolved label names must remain distinct
+case-insensitively. Former names have no special meaning unless assigned to a
+role. Category titles can also be overridden through `categories`. See the
 [author guide](author-guide.md#choose-labels).
 
 ## 4. Add the policy caller
@@ -140,7 +144,9 @@ the [configuration reference](configuration.md) for the full schema.
 
 Merge the caller workflows through your normal review process, then open a
 test PR and exercise label and fragment validation. In particular, verify that
-`semver:major` without a new valid breaking fragment fails.
+the configured `labels.major` value (default: `semver:major`) without a new
+valid breaking fragment fails, and that combining it with the configured
+`labels.skip` value fails.
 
 The caller job ID is `migration-policy`; the reusable job is named
 **Validate migration notes**. GitHub exposes a nested check name. **Discover its

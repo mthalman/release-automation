@@ -56,6 +56,11 @@ const custom = {
   skip: 'release:skip', feature: 'kind:feature', fix: 'kind:bug',
   documentation: 'kind:docs', dependencies: 'kind:deps',
 };
+const reassigned = {
+  major: 'skip-changelog', minor: 'semver:major', patch: 'semver:minor',
+  skip: 'semver:patch', feature: 'bug', fix: 'documentation',
+  documentation: 'semver:docs', dependencies: 'enhancement',
+};
 const titles = {
   breaking: 'Breaking Changes', feature: 'Features', fix: 'Bug Fixes',
   documentation: 'Documentation', dependencies: 'Dependencies', maintenance: 'Maintenance',
@@ -73,7 +78,7 @@ function write(filename, contents) {
 }
 
 try {
-  for (const scenario of ['default', 'uppercase-default', 'uppercase-custom', 'absent-labels']) {
+  for (const scenario of ['default', 'uppercase-default', 'uppercase-custom', 'reassigned-defaults', 'absent-labels']) {
     await test(scenario, async (t) => {
       const directory = path.join(workspace, scenario);
       const consumer = path.join(directory, 'consumer');
@@ -91,15 +96,17 @@ try {
         git('commit', '-qm', 'Synthetic consumer');
         return git('rev-parse', 'HEAD');
       };
-      const configured = scenario === 'uppercase-custom' ? custom : defaults;
+      const customized = scenario === 'uppercase-custom' || scenario === 'reassigned-defaults';
+      const configured = scenario === 'reassigned-defaults' ? reassigned :
+        scenario === 'uppercase-custom' ? custom : defaults;
       const actual = Object.fromEntries(Object.entries(configured)
         .map(([key, name]) => [key, scenario.startsWith('uppercase') ? name.toUpperCase() : name]));
-      const categoryTitles = scenario === 'uppercase-custom'
-        ? { ...titles, breaking: 'Compatibility Changes', documentation: 'Guides' } : titles;
-      const configPath = scenario === 'uppercase-custom' ? '.automation/release.json' : '';
+      const categoryTitles = customized
+        ? Object.fromEntries(Object.keys(titles).map((role) => [role, `Custom ${role}`])) : titles;
+      const configPath = customized ? '.automation/release.json' : '';
       if (configPath) write(path.join(consumer, configPath), JSON.stringify({
         version: 1, labels: configured,
-        categories: { breaking: categoryTitles.breaking, documentation: categoryTitles.documentation },
+        categories: categoryTitles,
       }));
       const hostile = '{"_extends":"evil/repository","categories":[],"template":"HOSTILE"}';
       write(path.join(consumer, '.github', 'release-drafter.yml'), hostile);
@@ -141,6 +148,10 @@ try {
         const conflict = policy([actual.major, actual.skip]);
         assert.notEqual(conflict.status, 0);
         assert.match(conflict.stderr, /Breaking-change PRs must not use/);
+        const retired = Object.values(defaults)
+          .filter((name) => !Object.values(configured).includes(name));
+        succeed(policy(retired, base));
+        succeed(policy([actual.major, ...retired]));
         succeed(cli('configuration', ['--labels', labelsPath, '--output', output]));
         const outputs = readFileSync(githubOutput, 'utf8').split(/\r?\n/);
         assert.ok(outputs.includes(`patch-label=${actual.patch}`));
@@ -189,6 +200,17 @@ try {
         assert.deepEqual(uncategorized, []);
         assert.ok(categorized.every((entry) => entry.pullRequests.length === 0));
         assert.equal(resolveVersionKeyIncrement({ pullRequests: [pullRequest('unrelated')], config }), 'patch');
+        const retired = Object.values(defaults)
+          .filter((name) => !Object.values(configured).includes(name));
+        for (const name of [...retired, 'unrelated']) {
+          const request = pullRequest(name);
+          assert.deepEqual(filterPullRequestsByPreCategories([request], config.categories), [request]);
+          assert.equal(resolveVersionKeyIncrement({ pullRequests: [request], config }), 'patch');
+          const [remaining, grouped] = categorizePullRequests({ pullRequests: [request], config });
+          assert.deepEqual(remaining, []);
+          assert.deepEqual(grouped.filter((entry) => entry.pullRequests.length)
+            .map((entry) => entry.title), [categoryTitles.maintenance]);
+        }
       });
 
       await t.test('workspace-root file reference loads the locked producer output', () => {

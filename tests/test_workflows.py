@@ -168,6 +168,12 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("${{ steps.guides.outputs.add-state-path }}", text)
         self.assertIn("if: steps.docs-pr.outputs.pull-request-number != ''", text)
         self.assertIn('--pr "$PR_NUMBER" --require-draft "$REQUIRE_DRAFT"', text)
+        self.assertIn(
+            "labels: |\n"
+            "            ${{ steps.configuration.outputs.patch-label }}\n"
+            "            ${{ steps.configuration.outputs.documentation-label }}",
+            text,
+        )
 
     def test_dogfooding_separates_proposed_code_from_trusted_policy(self):
         policy = (WORKFLOWS / "policy.yml").read_text(encoding="utf-8")

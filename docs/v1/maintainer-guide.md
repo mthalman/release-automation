@@ -7,9 +7,18 @@ reviewed draft release. For maintenance of the toolkit itself, see
 ## Review incoming product changes
 
 Check the release impact, labels, and fragment content during normal PR
-review. A major PR must add a new valid breaking fragment and cannot use
-`skip-changelog`. The policy check does not replace product tests or globally
-enforce the one-version-label convention.
+review. A breaking PR must use the configured `labels.major` value (default:
+`semver:major`), add a new valid breaking fragment, and cannot use the configured
+`labels.skip` value (default: `skip-changelog`). Policy requires a new fragment
+for PRs with the configured major label; it does not infer breaking impact from
+code, replace product tests, or globally enforce the one-version-label
+convention.
+
+Resolve label roles and category titles from the trusted configuration, merging
+partial overrides with defaults. Former label names have no special meaning
+unless explicitly assigned to a role; unrelated labels do not count as
+configured version, category, or exclusion labels. See the
+[configuration reference](configuration.md#branch-label-and-title-constraints).
 
 Keep the two workflow pins synchronized. Your repository owns its labels,
 rulesets, CI triggers, approval requirements, release credentials, and
@@ -30,10 +39,11 @@ Do not create an empty state file merely to satisfy readiness.
 1. Inspect the generated topics, indexes, version directories, and state diff.
    Check that the release version and the migration instructions are correct.
 2. For a newly created or updated PR, check it is draft and has the intended labels:
-   `semver:patch` plus `documentation` by default, with no other semantic-version
-   or category labels and no `skip-changelog`. The workflow verifies these label
-   categories, rather than assuming a successful PR-create action established
-   them.
+   the configured `labels.patch` and `labels.documentation` values
+   (`semver:patch` plus `documentation` by default), with no other configured
+   version or category labels and no configured `labels.skip` value.
+   Unrelated labels are allowed. The workflow verifies these configured roles,
+   rather than assuming a successful PR-create action established them.
 3. Have a **human mark the PR ready for review**. A PR created or updated with
    `GITHUB_TOKEN` does not automatically launch normal PR workflows. Configure
    your CI to listen to `ready_for_review`, and verify that required checks ran.
@@ -124,7 +134,7 @@ credentials and product-specific gates in your own release process.
 | Run fails at **Wait for merged migration guides** | Merge the exact generated files and state, then start a new run. The previous run does not resume. |
 | Run reports a changed remote commit or release | Let current work settle and rerun from the latest default-branch snapshot; do not bypass checks. |
 | No draft run after guide merge | Manually dispatch; bot-token event suppression can prevent a follow-up run. |
-| Version or category is unexpected | Review merged PR labels, skip pre-exclusion, highest conflicting bump, and patch fallback. |
+| Version or category is unexpected | Review resolved label roles and category titles, merged PR labels, configured skip pre-exclusion, highest conflicting bump, and patch fallback. |
 | Guide deletion is rejected | Check pending state at PR base and all release-body references; do not forge state in the PR. |
 
 For local reproduction, use the [read-only commands](local-development.md).

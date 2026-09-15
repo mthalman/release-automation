@@ -61,7 +61,9 @@ race limitations.
   [dependency lock](toolkit/requirements.txt), and
   [workflow definitions](.github/workflows) for versions at your selected commit.
 - Optional, versioned JSON configuration for paths, labels, and category titles.
-  The defaults work without a configuration file.
+  The defaults work without a configuration file. Resolved configuration
+  determines every label role and category title; overridden default label
+  names have no special meaning unless assigned to a role.
 
 Monorepo version streams, prereleases, arbitrary tag prefixes, GitHub Enterprise
 hosts, executable consumer configuration, and automatic migration of consumers'
@@ -103,7 +105,8 @@ the toolkit's code and assets to an immutable commit. External consumers should
 continue using the reviewed full-SHA installation examples.
 
 Self-dogfooding requires deployed workflows, the required repository settings,
-and canonical labels. It follows the same human review and readiness gates:
+and the configured labels (the default names for this repository's default
+setup). It follows the same human review and readiness gates:
 no automatic merge, tag creation, or release publication. Passing toolkit CI
 does not establish that the end-to-end release and human review lifecycle works
 in a particular repository. Follow

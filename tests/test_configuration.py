@@ -232,24 +232,30 @@ class ConfigurationTests(GitFixture):
         with self.assertRaisesRegex(ValueError, "regular"):
             load_config(self.repo, head, "directory")
 
-    def test_reserved_labels_cannot_be_assigned_to_incompatible_roles(self):
-        invalid = [
+    def test_label_names_can_be_assigned_to_any_distinct_configured_role(self):
+        configurations = [
             {"patch": "skip-changelog", "skip": "omit"},
             {"documentation": "semver:docs"},
         ]
-        invalid.extend(
+        configurations.extend(
             {role: "SKIP-CHANGELOG", "skip": "omit"}
             for role in Labels.__dataclass_fields__ if role != "skip"
         )
-        invalid.extend(
+        configurations.extend(
             {role: "SeMvEr:custom"}
             for role in ("skip", "feature", "fix", "documentation", "dependencies")
         )
-        for labels in invalid:
+        for labels in configurations:
             with self.subTest(labels=labels):
                 head = self.config_commit({"version": 1, "labels": labels})
-                with self.assertRaises(ValueError):
-                    load_config(self.repo, head, ".automation/release.json")
+                config = load_config(self.repo, head, ".automation/release.json")
+                for role, name in labels.items():
+                    self.assertEqual(getattr(config.labels, role), name)
+                verify_documentation_pr({
+                    "draft": True,
+                    "labels": [{"name": config.labels.patch},
+                               {"name": config.labels.documentation}],
+                }, config)
 
     def test_accepted_label_configurations_accept_generated_documentation_pair(self):
         configurations = [

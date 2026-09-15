@@ -71,7 +71,7 @@ class LabelIdentityTests(unittest.TestCase):
     def test_custom_exclusion_label_uses_same_identity_rules(self):
         config = Config(labels=Labels(major="breaking", skip="omit"))
         with patch("migration_notes.git", side_effect=AssertionError("Reject before reading Git")):
-            for skip in ("OMIT", "SKIP-CHANGELOG"):
+            for skip in ("omit", "OMIT"):
                 with self.subTest(skip=skip):
                     with self.assertRaises(ValueError):
                         check_pr(ROOT, "base", "head", ["BREAKING", skip], config)

@@ -73,9 +73,11 @@ headings or content. Inline code is restricted to a single source line;
 multiline examples require fenced code blocks. This keeps the trusted validator
 standard-library-only; it is not a general-purpose CommonMark or HTML renderer.
 
-Major and exclusion label comparisons are case-insensitive. A breaking PR
-cannot use either the configured exclusion label or canonical
-`skip-changelog`, even when the configured exclusion label has another name.
+Major and exclusion label comparisons are case-insensitive and use only
+resolved `labels.major` and `labels.skip` (defaults: `semver:major` and
+`skip-changelog`). A PR with the configured major label must add a new valid
+breaking fragment and cannot use the configured skip label. Policy does not
+infer breaking impact from code.
 
 The installation caller job ID is `migration-policy`; the callee job name is
 **Validate migration notes**. Discover GitHub's actual nested check name after
@@ -112,14 +114,15 @@ The run follows this order:
    absent state path.
 4. **Create or update the review PR.** Use the pinned create-pull-request on the
    configured automation branch, with draft always true. Updates reset it to
-   draft. Use the configured patch and documentation labels, without
-   `skip-changelog`.
+   draft. Use the configured patch and documentation labels, without the
+   configured skip label.
 5. **Verify review metadata.** Whenever the action returns a documentation PR
-   number, recheck its exact intended generated label categories. Require
-   draft status after PR creation or an actual update. A no-op rerun can
-   preserve a human-selected ready-for-review state, but it does not skip label
-   validation. Do not trust action success alone or silently accept conflicting
-   generated PR labels.
+   number, require exactly the configured patch and documentation labels among
+   configured version and category labels, and no configured skip label.
+   Unrelated labels are allowed. Require draft status after PR creation or an
+   actual update. A no-op rerun can preserve a human-selected ready-for-review
+   state, but it does not skip label validation. Do not trust action success
+   alone or silently accept conflicting generated PR labels.
 6. **Require committed files.** If the selected default-branch commit does not
    contain the exact generated files and state, fail the run before any
    draft-release write. Leave an existing draft unchanged. The step named
@@ -143,16 +146,25 @@ alone. One repository default branch and one stable release stream are
 supported; prerelease streams, arbitrary prefixes, monorepo version sets, and
 hosts other than github.com are not.
 
-The preset pre-excludes `skip-changelog`, places major-labeled changes in the
-unified Breaking Changes category, then uses the exclusive Features, Bug
-Fixes, Documentation, and Dependencies categories before Maintenance.
-Dependencies collapse after five entries. Labels and titles can use supported
-declarative overrides.
+Resolved configuration determines every label role and category title. The
+preset pre-excludes `labels.skip` (default: `skip-changelog`) and places
+`labels.major` changes in `categories.breaking` (default: **Breaking Changes**).
+It then uses the exclusive `feature`, `fix`, `documentation`, and `dependencies`
+categories before the `maintenance` fallback. Their default titles are
+**Features**, **Bug Fixes**, **Documentation**, **Dependencies**, and
+**Maintenance**. The dependencies category collapses after five entries.
 
-Release Drafter retains highest-bump resolution for conflicting semantic labels
-and patch fallback when no stronger bump applies. Exactly one semantic label
-and at most one category are contributor conventions, not universal policy
-validation. See [author labels](author-guide.md#choose-labels).
+No label names or namespaces are reserved. Former default names have no special
+meaning after an override unless explicitly assigned to a role. Unrelated
+labels do not count as configured version, category, or exclusion labels.
+All eight resolved label identities must remain distinct case-insensitively
+and satisfy the [configuration constraints](configuration.md#branch-label-and-title-constraints).
+
+Release Drafter retains highest-bump resolution for conflicting configured
+version labels and patch fallback when no stronger bump applies. Exactly one
+configured version label and at most one configured category label are
+contributor conventions, not universal policy validation. See
+[author labels](author-guide.md#choose-labels).
 
 ## Human and publication boundaries
 
