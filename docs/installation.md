@@ -1,7 +1,7 @@
 # Install the workflows
 
 This guide installs migration policy checks and draft generation in one
-github.com repository.
+GitHub repository.
 
 Before you begin, confirm that you can configure GitHub Actions, create labels,
 edit workflows, and merge changes through the repository's review process.
