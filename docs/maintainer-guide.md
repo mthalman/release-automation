@@ -129,7 +129,7 @@ credentials and product-specific gates in your own release process.
 | Workflow ref cannot be resolved | Replace the installation placeholder with a reachable reviewed full wrapper SHA in both callers. |
 | Configuration not found | Commit it at the policy base or selected draft HEAD. An uncommitted worktree file does not count. |
 | Major PR fails after editing a note | Add a new fragment; editing an older one cannot document a new major change. |
-| Generated PR cannot be created | Check token job permissions, repository Actions policy, and the create-and-approve-PR setting. |
+| Run fails at **Report a blocked documentation pull request** | Check token job permissions, repository Actions policy, and the create-and-approve-PR setting. |
 | Generated PR has no product CI | Have a human mark it ready and ensure CI listens to `ready_for_review`. |
 | Run fails at **Wait for merged migration guides** | Merge the exact generated files and state, then start a new run. The previous run does not resume. |
 | Run reports a changed remote commit or release | Let current work settle and rerun from the latest default-branch snapshot; do not bypass checks. |

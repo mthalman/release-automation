@@ -115,7 +115,10 @@ The run follows this order:
 4. **Create or update the review PR.** Use the pinned create-pull-request on the
    configured automation branch, with draft always true. Updates reset it to
    draft. Use the configured patch and documentation labels, without the
-   configured skip label.
+   configured skip label. If that action fails, for example because the
+   repository forbids GitHub Actions from creating pull requests, the step named
+   **Report a blocked documentation pull request** ends the run with the
+   required setting and permission named. No draft release is written.
 5. **Verify review metadata.** Whenever the action returns a documentation PR
    number, require exactly the configured patch and documentation labels among
    configured version and category labels, and no configured skip label.

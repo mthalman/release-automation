@@ -149,7 +149,8 @@ class WorkflowContractTests(unittest.TestCase):
             for name in (
                 "Checkout latest default branch", "Freeze commit and Release Drafter configuration",
                 "Snapshot releases", "Preview release boundary", "Prepare versioned migration guides",
-                "Open documentation pull request", "Verify documentation pull request",
+                "Open documentation pull request", "Report a blocked documentation pull request",
+                "Verify documentation pull request",
                 "Wait for merged migration guides", "Update draft with links to merged guides",
             )
         ]
@@ -181,6 +182,18 @@ class WorkflowContractTests(unittest.TestCase):
             "            ${{ steps.configuration.outputs.documentation-label }}",
             text,
         )
+
+    def test_blocked_documentation_pull_request_ends_the_run(self):
+        text = (WORKFLOWS / "release-draft.yml").read_text(encoding="utf-8")
+        blocked = text.index("- name: Report a blocked documentation pull request")
+        opened = text.index("- name: Open documentation pull request")
+        step = text[opened:text.index("\n      - name:", opened)]
+        self.assertIn("id: docs-pr", step)
+        self.assertIn("continue-on-error: true", step)
+        self.assertIn("if: steps.docs-pr.outcome == 'failure'", text[blocked:])
+        self.assertIn("Allow GitHub Actions to create and approve pull requests", text[blocked:])
+        self.assertIn("exit 1", text[blocked:text.index("- name: Verify documentation pull request")])
+        self.assertLess(blocked, text.index("- name: Update draft with links to merged guides"))
 
     def test_dogfooding_separates_proposed_code_from_trusted_policy(self):
         policy = (WORKFLOWS / "policy.yml").read_text(encoding="utf-8")
