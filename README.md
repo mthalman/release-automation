@@ -113,5 +113,4 @@ in a particular repository. Follow
 
 ## License
 
-This project uses the [MIT license](LICENSE), retaining
-`Copyright (c) 2020 Matt Thalman` from the extracted source.
+This project uses the [MIT license](LICENSE).
