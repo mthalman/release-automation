@@ -187,8 +187,9 @@ class WorkflowContractTests(unittest.TestCase):
         text = (WORKFLOWS / "release-draft.yml").read_text(encoding="utf-8")
         blocked = text.index("- name: Report a blocked documentation pull request")
         opened = text.index("- name: Open documentation pull request")
-        self.assertIn("id: docs-pr", text[opened:blocked])
-        self.assertIn("continue-on-error: true", text[opened:blocked])
+        step = text[opened:text.index("\n      - name:", opened)]
+        self.assertIn("id: docs-pr", step)
+        self.assertIn("continue-on-error: true", step)
         self.assertIn("if: steps.docs-pr.outcome == 'failure'", text[blocked:])
         self.assertIn("Allow GitHub Actions to create and approve pull requests", text[blocked:])
         self.assertIn("exit 1", text[blocked:text.index("- name: Verify documentation pull request")])
