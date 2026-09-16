@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from configuration import Config, drafter_config, load_config, resolve_labels, strict_json
-from migration_notes import check_pr, render
+from migration_notes import STABLE_TAG, check_pr, render
 from repository import git
 from update_release_draft import api, process_preview
 
@@ -81,7 +81,7 @@ def execute() -> None:
     commit = git(repo, "rev-parse", "--verify", f"{args.head}^{{commit}}").strip()
     config = load_config(repo, commit, args.config_path, args.default_branch)
     if args.command == "render":
-        if args.base and not re.fullmatch(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", args.base):
+        if args.base and not STABLE_TAG.fullmatch(args.base):
             raise ValueError("--base must be a stable vMAJOR.MINOR.PATCH tag.")
         print(render(repo, f"refs/tags/{args.base}" if args.base else None, commit, config), end="")
         return

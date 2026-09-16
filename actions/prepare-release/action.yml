@@ -1,0 +1,49 @@
+name: Prepare a tagged release
+description: Validate an existing tag against its prepared draft before consumer-owned publishing steps
+inputs:
+  token:
+    description: GitHub token able to read source and view prepared drafts
+    required: false
+    default: ${{ github.token }}
+  config-path:
+    description: Optional version 1 JSON configuration read from the tagged commit
+    required: false
+    default: ""
+outputs:
+  tag:
+    description: Exact stable tag from the push event
+    value: ${{ steps.prepare.outputs.tag }}
+  version:
+    description: Version without the v prefix
+    value: ${{ steps.prepare.outputs.version }}
+  sha:
+    description: Peeled tagged commit SHA
+    value: ${{ steps.prepare.outputs.sha }}
+  release-id:
+    description: Validated GitHub release ID
+    value: ${{ steps.prepare.outputs.release-id }}
+  release-url:
+    description: GitHub release URL
+    value: ${{ steps.prepare.outputs.release-url }}
+  already-published:
+    description: True if the exact prepared release is already published; skip consumer side effects
+    value: ${{ steps.prepare.outputs.already-published }}
+  context:
+    description: Opaque JSON handoff for finalize-release, not a local file or a signed attestation
+    value: ${{ steps.prepare.outputs.context }}
+runs:
+  using: composite
+  steps:
+    - name: Set up toolkit Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: "3.13"
+    - name: Validate the prepared release
+      id: prepare
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        GH_HOST: github.com
+        CONFIG_PATH: ${{ inputs.config-path }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: python -I "$ACTION_PATH/../../toolkit/action_runtime.py" prepare

@@ -15,6 +15,7 @@ from migration_guides import (
 )
 from migration_notes import check_pr, render, validate_fragment, validate_guide
 from update_release_draft import combine_notes, process_preview, verify_main
+from release_metadata import MARKER, preparation
 
 
 NOTE = """### Client timeout contract
@@ -269,7 +270,9 @@ class ReleaseLifecycle:
         self.assertTrue(endpoint.endswith("/17"))
         self.assertEqual(method, "PATCH")
         self.assertEqual(payload["tag_name"], "v1.0.1")
-        self.assertEqual(payload["body"], self.preview(breaking=False).split("-->\n", 1)[1])
+        self.assertEqual(payload["body"].split(MARKER)[0].rstrip(),
+                         self.preview(breaking=False).split("-->\n", 1)[1].rstrip())
+        self.assertEqual(preparation(payload["body"])["commit"], payload["target_commitish"])
         self.assertEqual(self.snapshot[0]["body"], "Existing release body")
 
     def test_missing_or_inexact_guides_leave_existing_draft_untouched(self):

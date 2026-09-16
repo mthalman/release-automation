@@ -5,8 +5,9 @@ import subprocess
 from pathlib import Path
 
 from configuration import DEFAULT, Config
-from migration_notes import MIGRATION_END, MIGRATION_START, STABLE_TAG, git, markdown_lines, previous_tag, render
-from migration_guides import guides_ready, linked_notes, plan_guides, write_guides
+from migration_notes import MIGRATION_END, MIGRATION_START, STABLE_TAG, git, markdown_lines, pending_guide_versions, previous_tag, render
+from migration_guides import committed_guides, guides_ready, linked_notes, plan_guides, write_guides
+from release_metadata import prepared_body
 
 
 def api(endpoint: str, method: str = "GET", payload: dict | None = None):
@@ -139,6 +140,14 @@ def process_preview(
             "Waiting for migration guides: merge the current documentation PR and rerun "
             "Release Drafter. The existing release draft has not been changed."
         )
+    base_commit = git(repo, "rev-parse", "--verify", f"refs/tags/{base}^{{commit}}").strip() if base else None
+    pending = pending_guide_versions(committed_guides(repo, commit, config).get(config.state_path))
+    guide_references = [
+        version for version in pending
+        if any(release["draft"] and f"/{config.guide_root}/{version}/" in (release.get("body") or "")
+               for release in snapshot)
+    ]
+    body = prepared_body(body, commit, base, base_commit, snapshot, config, guide_references, tag=tag)
     verify_main(repo, commit, config)
     result = update_draft(endpoint, snapshot, body, name, tag, commit)
     print(f"Updated draft release {result['id']} ({result['tag_name']}) with links to merged guides.")
