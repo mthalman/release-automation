@@ -9,7 +9,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/rhysd/actionlint v1.7.12 // indirect
