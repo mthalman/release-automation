@@ -115,6 +115,7 @@ jobs:
 
       - name: Open documentation pull request
         id: docs-pr
+        continue-on-error: true
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           path: consumer
@@ -144,6 +145,20 @@ jobs:
             return it to draft. Review and merge, then rerun the release workflow if
             it did not run automatically. The existing release draft is unchanged
             until these exact guides are committed on the default branch.
+
+      - name: Report a blocked documentation pull request
+        if: steps.docs-pr.outcome == 'failure'
+        run: |
+          echo "::error::Could not open or update the documentation pull request. Enable 'Allow GitHub Actions to create and approve pull requests' in Settings -> Actions -> General, confirm the caller grants pull-requests: write, then rerun. The existing release draft is unchanged."
+          {
+            echo "## Documentation pull request blocked"
+            echo
+            echo "The generated guides branch was prepared, but its pull request could not be opened or updated."
+            echo "Enable **Allow GitHub Actions to create and approve pull requests** in **Settings -> Actions -> General**,"
+            echo "confirm the caller grants \`pull-requests: write\`, then rerun. See the failed step log for the underlying error."
+            echo "The existing release draft is unchanged. Do not tag or publish based on it."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       - name: Verify documentation pull request
         if: steps.docs-pr.outputs.pull-request-number != ''
