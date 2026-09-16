@@ -113,7 +113,9 @@ def validate_source(
     metadata = preparation(release["body"])
     commit = git(repo, "rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}").strip()
     tag_object = git(repo, "rev-parse", "--verify", f"refs/tags/{tag}").strip()
-    if (metadata["tag"] != tag or sha not in (commit, tag_object) or after not in (commit, tag_object)
+    if after != tag_object:
+        raise ValueError("Pushed tag object changed since the creation event.")
+    if (metadata["tag"] != tag or sha not in (commit, tag_object)
             or release["target_commitish"] != commit or metadata["commit"] != commit):
         raise ValueError("Pushed tag, event, and prepared draft must identify exactly the same commit.")
     ancestor = subprocess.run(

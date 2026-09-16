@@ -265,8 +265,10 @@ For an unpublished release, prepare requires all of the following:
 
 1. The event is a supported new-tag creation push, and its tag has the exact
    stable format and still resolves to the expected raw tag object and tagged
-   commit. Replacing an annotated tag object is a
-   change even if its peeled commit stays the same.
+   commit. The event's `after` value must equal the raw tag object, not just its
+   peeled commit. Replacing a lightweight tag with an annotated tag, or replacing
+   an annotated tag object, is rejected even if the commit stays the same and
+   the replacement occurs before prepare starts.
 2. The repository has one prepared stable draft for this tag, with the exact
    source commit in `target_commitish`, a version-only title, and valid
    preparation metadata whose recorded tag equals the event tag. Renaming or

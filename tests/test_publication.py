@@ -234,8 +234,10 @@ class PublicationTests(GitFixture):
             fetches = stack.enter_context(patch("publication.fetch_source", side_effect=fetch))
             yield reads, remote, fetches
 
-    def inspect(self):
-        return publication.inspect_release(REPOSITORY, TAG, self.source, self.source, self.config_path)
+    def inspect(self, *, after=None):
+        return publication.inspect_release(
+            REPOSITORY, TAG, self.source, after or self.source, self.config_path,
+        )
 
     def test_stable_push_event_is_accepted(self):
         environment, event = self.event()
@@ -311,22 +313,24 @@ class PublicationTests(GitFixture):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 publication.select_release([{**self.release, **changes}], TAG)
 
-    def test_lightweight_and_annotated_tag_accept_raw_or_peeled_event_ids(self):
+    def test_lightweight_and_annotated_tag_require_raw_after_and_accept_raw_or_peeled_sha(self):
         self.assertEqual(self.validate()["tag-object"], self.source)
         self.git("tag", "-f", "-a", TAG, "-m", "Reviewed release", self.source)
         raw = self.git("rev-parse", f"refs/tags/{TAG}")
         self.assertNotEqual(raw, self.source)
         for sha in (raw, self.source):
-            for after in (raw, self.source):
-                with self.subTest(sha=sha, after=after):
-                    identity = self.validate(sha=sha, after=after)
-                    self.assertEqual(identity["sha"], self.source)
-                    self.assertEqual(identity["tag-object"], raw)
+            with self.subTest(sha=sha):
+                identity = self.validate(sha=sha, after=raw)
+                self.assertEqual(identity["sha"], self.source)
+                self.assertEqual(identity["tag-object"], raw)
+                with self.assertRaisesRegex(ValueError, "tag object"):
+                    self.validate(sha=sha, after=self.source)
 
     def test_source_rejects_event_target_and_receipt_commit_mismatches(self):
-        for sha, after in ((self.base, self.source), (self.source, self.base)):
-            with self.subTest(sha=sha, after=after), self.assertRaisesRegex(ValueError, "same commit"):
-                self.validate(sha=sha, after=after)
+        with self.assertRaisesRegex(ValueError, "same commit"):
+            self.validate(sha=self.base)
+        with self.assertRaisesRegex(ValueError, "tag object"):
+            self.validate(after=self.base)
         for target in ("main", self.base, TAG):
             with self.subTest(target=target), self.assertRaisesRegex(ValueError, "same commit"):
                 self.validate({**self.release, "target_commitish": target})
@@ -602,7 +606,7 @@ class PublicationTests(GitFixture):
         self.git("update-ref", f"refs/tags/{TAG}", original)
         self.assertNotEqual(original, replacement)
         with self.remote(tag_objects=[replacement]), self.assertRaisesRegex(ValueError, "changed"):
-            self.inspect()
+            self.inspect(after=original)
 
     def test_finalize_allows_uploads_after_cross_job_json_roundtrip_and_only_patches_flags(self):
         with self.remote() as (_, _, prepare_fetches):
@@ -670,18 +674,16 @@ class PublicationTests(GitFixture):
             _, identity = self.inspect()
         self.assertEqual(identity, context)
 
-    def test_annotated_tag_replacement_between_phases_invalidates_context(self):
+    def test_annotated_tag_replacement_between_phases_rejects_original_event(self):
         self.git("tag", "-f", "-a", TAG, "-m", "Original receipt", self.source)
+        original = self.git("rev-parse", f"refs/tags/{TAG}")
         with self.remote():
-            _, context = self.inspect()
+            _, context = self.inspect(after=original)
         self.git("tag", "-f", "-a", TAG, "-m", "Replacement receipt", self.source)
-        with self.remote():
-            release, identity = self.inspect()
-        self.assertEqual(identity["sha"], context["sha"])
-        self.assertNotEqual(identity["tag-object"], context["tag-object"])
-        with patch("publication.github") as writes, self.assertRaisesRegex(ValueError, "context changed"):
-            publication.finalize(REPOSITORY, release, identity, context)
-        writes.assert_not_called()
+        self.assertEqual(self.git("rev-parse", f"refs/tags/{TAG}^{{commit}}"), context["sha"])
+        self.assertNotEqual(self.git("rev-parse", f"refs/tags/{TAG}"), context["tag-object"])
+        with self.remote(), self.assertRaisesRegex(ValueError, "tag object"):
+            self.inspect(after=original)
 
     def test_finalize_rejects_every_stale_or_missing_context_field(self):
         with self.remote():
@@ -762,6 +764,30 @@ class PublicationTests(GitFixture):
         self.assertEqual(values["release-url"], published["html_url"])
         self.assertNotEqual(values["release-url"], outputs["release-url"])
         self.assertIn("published.", message)
+
+    def test_prepare_rejects_lightweight_tag_replacement_before_first_inspection(self):
+        environment, event = self.event()
+        self.git("tag", "-f", "-a", TAG, "-m", "Replacement", self.source)
+        self.assertNotEqual(self.git("rev-parse", f"refs/tags/{TAG}"), event["after"])
+        self.assertEqual(self.git("rev-parse", f"refs/tags/{TAG}^{{commit}}"), event["after"])
+        for draft in (True, False):
+            self.releases = [{
+                **self.release, "draft": draft, "published_at": None if draft else "now",
+            }]
+            with self.subTest(draft=draft), patch.object(
+                self, "event", return_value=(environment, event),
+            ), self.remote():
+                with self.assertRaisesRegex(ValueError, "tag object"):
+                    self.cli("prepare")
+            self.assertFalse((self.workspace / "outputs.txt").exists())
+
+    def test_finalize_rejects_lightweight_tag_replacement_after_prepare_without_outputs(self):
+        with self.remote():
+            outputs, _ = self.cli("prepare")
+        self.git("tag", "-f", "-a", TAG, "-m", "Replacement", self.source)
+        with self.remote(), self.assertRaisesRegex(ValueError, "tag object"):
+            self.cli("finalize", context=outputs["context"])
+        self.assertFalse((self.workspace / "outputs.txt").exists())
 
     def test_published_cli_reports_noop_without_mutation(self):
         published_url = f"https://github.com/{REPOSITORY}/releases/tag/{TAG}"
