@@ -165,7 +165,10 @@ class WorkflowContractTests(unittest.TestCase):
             'gh api "repos/$GITHUB_REPOSITORY/labels" --paginate > "$RUNNER_TEMP/release-labels.json"',
             text,
         )
-        self.assertNotIn("--slurp", text)
+        self.assertFalse(
+            [line for line in text.splitlines() if "--slurp" in line and "--jq" in line],
+            "gh rejects --slurp combined with --jq",
+        )
         self.assertEqual(text.count('--labels "$RUNNER_TEMP/release-labels.json"'), 3)
         self.assertIn("ref: ${{ steps.repository.outputs.branch }}", text)
         self.assertIn("fetch-depth: 0", text)
