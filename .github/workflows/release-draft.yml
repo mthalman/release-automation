@@ -68,7 +68,7 @@ jobs:
         env:
           DEFAULT_BRANCH: ${{ steps.repository.outputs.branch }}
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/labels" --paginate --slurp --jq 'add' > "$RUNNER_TEMP/release-labels.json"
+          gh api "repos/$GITHUB_REPOSITORY/labels" --paginate > "$RUNNER_TEMP/release-labels.json"
           "$RUNNER_TEMP/release-automation-venv/bin/python" -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" configuration \
             --repo "$GITHUB_WORKSPACE/consumer" --head HEAD \
             --default-branch "$DEFAULT_BRANCH" --config-path "$CONFIG_PATH" \

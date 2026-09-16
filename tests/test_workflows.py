@@ -161,7 +161,11 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("config-name: file:/release-drafter.json", text)
         self.assertIn('--output "$GITHUB_WORKSPACE/release-drafter.json"', text)
         self.assertNotIn('--output "$RUNNER_TEMP/release-drafter.json"', text)
-        self.assertIn('"repos/$GITHUB_REPOSITORY/labels" --paginate --slurp', text)
+        self.assertIn(
+            'gh api "repos/$GITHUB_REPOSITORY/labels" --paginate > "$RUNNER_TEMP/release-labels.json"',
+            text,
+        )
+        self.assertNotIn("--slurp", text)
         self.assertEqual(text.count('--labels "$RUNNER_TEMP/release-labels.json"'), 3)
         self.assertIn("ref: ${{ steps.repository.outputs.branch }}", text)
         self.assertIn("fetch-depth: 0", text)
