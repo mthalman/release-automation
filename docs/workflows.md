@@ -1,7 +1,10 @@
 # Reusable workflow contract
 
 This reference describes the two reusable entrypoints and their trust boundaries.
-For copyable callers, see [installation](installation.md).
+For copyable callers, see [installation](installation.md). The separate opt-in
+[tag-publishing Actions](tag-publishing.md) allow arbitrary consumer-owned steps
+between validation and publication; they do not add inputs or publishing
+behavior to these reusable workflows.
 
 ## Entrypoints and inputs
 
@@ -25,9 +28,15 @@ Both wrappers contain a literal full commit SHA **P** identifying their
 trusted payload. P is committed and made reachable before W is created.
 The workflow does not dynamically infer a second source ref from the caller.
 
+External consumers pin `actions/prepare-release` and `actions/finalize-release`
+to that same reviewed W when enabling tag publishing. Those composite Actions
+load the packaged toolkit through `github.action_path`, not a consumer checkout
+or another user-selected ref. The W/P sequence still applies to reusable
+wrapper payload updates.
+
 Toolkit PRs introducing payload pins preserve P as an ancestor of W by using a
-merge commit rather than squash or rebase. CI compares the pinned toolkit tree
-with the proposed files and runs an archive of P from full history. See
+merge commit rather than squash or rebase. CI compares the pinned `toolkit` and
+`actions` trees with the proposed files and runs an archive of P from full history. See
 [payload retention](../MAINTAINERS.md#update-the-immutable-payload-pins);
 separate retention branches or tags require an explicit maintenance decision.
 
@@ -42,7 +51,12 @@ For self-dogfooding, this toolkit repository calls its reusable workflows using
 `./.github/workflows/release-draft.yml`. GitHub resolves each local workflow at
 the caller's commit, while its wrapper still uses literal payload P. This
 same-repository arrangement does not change the external consumer pinning
-contract. Activation and live verification require deployment and repository setup;
+contract. Its separate `publish.yml` pins both external publication Action
+references to literal P, which includes their metadata and packaged toolkit.
+Between the Actions, guarded consumer-owned steps check out the prepared SHA
+and run toolkit tests. Public Action metadata changes therefore require a new P
+and refreshed self-dogfooding pins; external consumers continue to pin W.
+Activation and live verification require deployment and repository setup;
 see [self-dogfooding setup](../MAINTAINERS.md#enable-self-dogfooding).
 
 ## Migration policy
@@ -87,7 +101,9 @@ deployment before adding it to a ruleset. The toolkit does not manage rulesets.
 
 One concurrency group, `release-drafter`, serializes the **entire** pipeline
 with `cancel-in-progress: false`. Keep this group in the reusable workflow,
-not duplicated in the caller.
+not duplicated in the drafting caller. A separate consumer tag-publishing
+workflow must use the same group with cancellation disabled to serialize
+prepare, consumer steps, and finalize against drafting.
 
 The run follows this order:
 
@@ -135,12 +151,23 @@ The run follows this order:
 7. **Recheck mutable state.** Re-read releases, the remote selected-branch
    commit, relevant label spellings, and readiness. Stop if assumptions changed.
 8. **Write only a draft.** Only after those checks, POST a new draft release or
-   PATCH the existing draft. Do not publish, create tags, merge a PR, or run
-   consumer publication.
+   PATCH the existing draft. Include hidden, versioned preparation metadata in
+   its body recording the dry-run tag, selected source commit, previous tag and commit,
+   resolved configuration digest, published release state digest, and pending
+   guide-version references from the draft body before replacement. Those
+   references let later publication checks replay the original retention
+   effect while still requiring exact committed guides and state.
+   Do not publish, create tags, merge a PR, or run consumer publication.
 
 A subsequent run after guide merge can pass readiness without needing another
 documentation change. If bot-token event suppression prevents that run, a human
 can dispatch it manually.
+
+The preparation metadata supports later validation at the tagged commit; it
+binds the event tag to the existing dry-run resolution without calculating a
+second version. It is not a signed attestation. Existing drafts must be refreshed by a successful
+drafting run before tag publishing. Publication never silently regenerates or
+commits missing guides. See the [publication checks](tag-publishing.md#what-the-publication-checks-establish).
 
 ## Versioning and categorization
 
@@ -174,9 +201,26 @@ contributor conventions, not universal policy validation. See
 `GITHUB_TOKEN`-created PRs do not automatically trigger ordinary PR CI. A human
 must mark the generated PR ready for review, and consumer CI must subscribe to
 `ready_for_review`. Automation updates return the PR to draft. The toolkit
-never auto-approves, auto-merges, or publishes.
+never auto-approves or auto-merges. These reusable workflows never publish.
 
-The final API rechecks are not transactional with human publication. A human
-can change a release between requests. The consumer must recheck the final
-draft before publishing and retain independent product CI, credentials, and
-release gates. Pre-draft readiness is not a publication gate.
+The optional tag workflow begins only after an actual stable tag push.
+Prepare verifies a sole matching prepared draft, exact tagged source and
+configuration, recorded release boundary, committed guides/state, migration
+links, published state, and current default-branch ancestry. Default-branch head
+advancement between Actions is allowed if ancestry remains valid; detected
+movement during either inspection fails. Consumers then run their own steps. Finalize independently
+rechecks those facts and the opaque preparation context before its sole PATCH
+of `draft: false` and `make_latest: "true"`. It sends no note/title-edit,
+release-creation, or tag-creation request. The context excludes draft status,
+timestamps, and assets, permitting uploads and an otherwise identical release
+already published between steps.
+
+Final API rechecks in either pipeline are non-atomic, not transactional with
+human actions or a publication lock. A writer can change a release between
+requests. A concurrent tag deletion can let GitHub recreate it during
+publication, and release-editor changes can race the PATCH. A post-response
+mismatch can be reported after publication without rolling it back. Retain
+independent product CI, credentials, and release gates.
+Pre-draft readiness is not a publication gate. See
+[tag publishing](tag-publishing.md) for exact inputs, outputs, idempotent
+published reruns, and consumer partial-failure responsibilities.

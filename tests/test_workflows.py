@@ -26,12 +26,18 @@ class WorkflowContractTests(unittest.TestCase):
             self.assertIn("path: _release-automation", text)
             self.assertIn('-I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py"', text)
         self.assertEqual(pins[0], pins[1], "Both entrypoints must use the same tested payload")
+        publishing = (WORKFLOWS / "publish.yml").read_text(encoding="utf-8")
+        action_pins = re.findall(
+            r"uses: mthalman/release-automation/actions/(?:prepare|finalize)-release@([0-9a-f]{40})",
+            publishing,
+        )
+        self.assertEqual(action_pins, [pins[0], pins[0]])
         return pins[0]
 
     def test_payload_pins_match_checked_in_toolkit(self):
         pin = self.payload_pins()
         listing = subprocess.check_output(
-            ["git", "ls-tree", "-r", pin, "--", "toolkit"], cwd=ROOT, text=True,
+            ["git", "ls-tree", "-r", pin, "--", "toolkit", "actions"], cwd=ROOT, text=True,
         )
         paths = []
         for entry in listing.splitlines():
@@ -48,7 +54,8 @@ class WorkflowContractTests(unittest.TestCase):
             paths.append(name)
         proposed = {
             path.relative_to(ROOT).as_posix()
-            for path in (ROOT / "toolkit").rglob("*")
+            for directory in ("toolkit", "actions")
+            for path in (ROOT / directory).rglob("*")
             if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
         }
         self.assertEqual(set(paths), proposed)
@@ -56,7 +63,7 @@ class WorkflowContractTests(unittest.TestCase):
 
     def test_payload_archive_runs_without_consumer_tooling(self):
         pin = self.payload_pins()
-        archive = subprocess.check_output(["git", "archive", pin, "toolkit"], cwd=ROOT)
+        archive = subprocess.check_output(["git", "archive", pin, "toolkit", "actions"], cwd=ROOT)
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory)
             with tarfile.open(fileobj=io.BytesIO(archive)) as package:
@@ -67,9 +74,17 @@ class WorkflowContractTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("configuration", result.stdout)
+            for action in ("prepare-release", "finalize-release"):
+                self.assertTrue((destination / "actions" / action / "action.yml").is_file())
+            publication = subprocess.run(
+                [sys.executable, "-I", str(destination / "toolkit" / "publish.py"), "--help"],
+                cwd=destination, capture_output=True, text=True,
+            )
+            self.assertEqual(publication.returncode, 0, publication.stderr)
+            self.assertIn("{prepare,finalize}", publication.stdout)
 
     def test_external_actions_are_immutable(self):
-        for workflow in WORKFLOWS.glob("*.yml"):
+        for workflow in [*WORKFLOWS.glob("*.yml"), *(ROOT / "actions").glob("*/action.yml")]:
             for target in re.findall(r"uses:\s*(\S+)", workflow.read_text(encoding="utf-8")):
                 if not target.startswith("./"):
                     self.assertRegex(target, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
@@ -213,6 +228,32 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn('node-version: "24"', ci)
         self.assertIn('npm --prefix "$GITHUB_WORKSPACE/_release-drafter" ci --ignore-scripts --omit=dev', ci)
         self.assertIn('node tests/drafter-contract.mjs "$GITHUB_WORKSPACE/_release-drafter" python', ci)
+
+    def test_tag_publishing_requires_successful_consumer_steps(self):
+        text = (WORKFLOWS / "publish.yml").read_text(encoding="utf-8")
+        self.assertIn('tags: ["v*"]', text)
+        self.assertNotIn("workflow_dispatch", text)
+        self.assertNotIn("pull_request", text)
+        self.assertIn("group: release-drafter\n  cancel-in-progress: false", text)
+        positions = [
+            text.index(f"- name: {name}") for name in (
+                "Prepare tagged release", "Checkout the validated source",
+                "Install toolkit test dependencies", "Run toolkit tests",
+                "Publish prepared GitHub release",
+            )
+        ]
+        self.assertEqual(positions, sorted(positions))
+        self.assertEqual(text.count("if: steps.prepare.outputs.already-published != 'true'"), 3)
+        self.assertIn("ref: ${{ steps.prepare.outputs.sha }}", text)
+        self.assertIn("context: ${{ steps.prepare.outputs.context }}", text)
+        self.assertIn("persist-credentials: false", text)
+        self.assertNotIn("always()", text)
+        self.assertNotIn("continue-on-error", text)
+        finalizer = text[text.index("- name: Publish prepared GitHub release"):]
+        self.assertIn("if: success()", finalizer)
+        self.assertEqual(text.count("contents: write"), 1)
+        self.assertIn("    permissions:\n      contents: write", text)
+        self.assertNotIn("id-token:", text)
 
 
 if __name__ == "__main__":
