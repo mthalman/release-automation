@@ -41,8 +41,9 @@ operation. Publication still has [non-atomic API race limitations](#what-the-pub
 Before pushing a tag, complete review, merge exact generated documentation and
 state, and run drafting successfully. Inspect the resulting draft, source
 commit, version, migration links, CI, and approvals. A human then creates and
-pushes the exact tag at that prepared commit. Both annotated and lightweight
-tags are supported. Do not move a tag to repair a failed gate.
+pushes a new tag with the exact prepared name at that commit. Both annotated
+and lightweight tags are supported. Updates to existing tags, including forced
+moves, are rejected. Do not move a tag to repair a failed gate.
 
 Tag pushes made with a workflow's `GITHUB_TOKEN` normally do not trigger another
 push workflow. A human push avoids that event suppression. If you automate tag
@@ -186,8 +187,16 @@ jobs:
 ```
 
 The `v*` event filter is deliberately broader than the supported tag grammar.
-The Actions reject unsupported tags, branch pushes, tag deletions, manual
-dispatches, and other events. They require an actual tag-push event.
+The Actions require an actual **new-tag creation push**: `created` must be
+Boolean `true`, `forced` and `deleted` must be Boolean `false`, and `before`
+must be the all-zero 40-character SHA. Missing or malformed flags or `before`
+fail closed. Unsupported tags, branch pushes, existing-tag updates (including
+forced moves), tag deletions, manual dispatches, and other events are rejected.
+
+A creation event does not prove that a tag name has never previously been
+deleted and recreated. These checks validate the event and current Git objects,
+not persistent immutable ref history. Retain your own tag-protection and audit
+controls; do not delete and recreate tags to bypass a failed gate.
 
 Every build or publication step uses the `already-published` guard. Its ordinary
 GitHub Actions success condition also remains in effect. Do not add `always()`
@@ -254,8 +263,9 @@ in the example is solely for the consumer-owned steps.
 
 For an unpublished release, prepare requires all of the following:
 
-1. The event tag has the exact stable format and still resolves to the expected
-   raw tag object and tagged commit. Replacing an annotated tag object is a
+1. The event is a supported new-tag creation push, and its tag has the exact
+   stable format and still resolves to the expected raw tag object and tagged
+   commit. Replacing an annotated tag object is a
    change even if its peeled commit stays the same.
 2. The repository has one prepared stable draft for this tag, with the exact
    source commit in `target_commitish`, a version-only title, and valid
@@ -376,6 +386,10 @@ tag-push event; this is not a handoff to a manually dispatched workflow.
 
 ## Rerun and recover safely
 
+Retrying the workflow for the original valid tag-creation event remains
+supported; a retry does not require another tag push. The creation-event checks
+still apply on already-published reruns.
+
 For an already-published release at the exact event tag, the Actions validate
 its preparation marker, source provenance, tagged configuration, and current
 default-branch ancestry and return
@@ -404,8 +418,9 @@ checks or move a tag to force success.
 
 In a test repository, observe a successful refreshed draft, a human tag push,
 successful consumer steps, and publication of that existing release with notes
-and title preserved. Test rejection of stale preparation and changed draft
-metadata, successful asset uploads between the Actions, failure propagation
+and title preserved. Test rejection of existing-tag updates, forced moves,
+missing or malformed event flags, stale preparation, and changed draft metadata.
+Also test successful asset uploads between the Actions, failure propagation
 from consumer steps, and an exact-tag published rerun that skips those steps.
 
 Inspect environment approvals, token permissions, and the shared concurrency

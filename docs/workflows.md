@@ -203,7 +203,12 @@ must mark the generated PR ready for review, and consumer CI must subscribe to
 `ready_for_review`. Automation updates return the PR to draft. The toolkit
 never auto-approves or auto-merges. These reusable workflows never publish.
 
-The optional tag workflow begins only after an actual stable tag push.
+The optional tag workflow accepts only a new stable-tag creation push, not an
+existing-tag update or forced move. It requires Boolean `created: true`,
+`forced: false`, and `deleted: false`, with an all-zero 40-character `before`
+SHA; missing or malformed event fields fail closed. Retries of that original
+creation event remain supported. This does not establish that a tag name has
+never been deleted and recreated.
 Prepare verifies a sole matching prepared draft, exact tagged source and
 configuration, recorded release boundary, committed guides/state, migration
 links, published state, and current default-branch ancestry. Default-branch head

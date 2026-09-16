@@ -38,8 +38,13 @@ def tag_event(environment: dict, event: dict) -> tuple[str, str, str]:
             or not ref.startswith("refs/tags/")
             or not STABLE_TAG.fullmatch(ref.removeprefix("refs/tags/"))
             or event.get("ref") != ref or event.get("deleted") is not False
+            or event.get("forced") is not False or event.get("created") is not True
+            or event.get("before") != "0" * 40
             or event.get("repository", {}).get("full_name") != environment.get("GITHUB_REPOSITORY")):
-        raise ValueError("Publication requires a non-deletion push event for an exact stable version tag.")
+        raise ValueError(
+            "Publication requires a non-forced creation push for an exact stable version tag; "
+            "tag updates and deletions cannot publish."
+        )
     sha, after = environment.get("GITHUB_SHA", ""), event.get("after", "")
     if not isinstance(after, str) or not SHA.fullmatch(after) or not SHA.fullmatch(sha):
         raise ValueError("The tag event must identify immutable Git objects.")

@@ -138,9 +138,11 @@ references use the same reviewed full SHA as your reusable workflows.
    edited before prepare; retain the version-only title, preparation metadata,
    and migration-links block. Metadata is a consistency record, not a signed
    attestation.
-3. Have a human push the exact stable tag at the prepared source commit.
+3. Have a human create and push the exact new stable tag at the prepared source commit.
    Annotated and lightweight tags work. The commit must remain an ancestor of
    the current default branch; it need not be that branch's latest commit.
+   Existing-tag updates and forced moves are rejected. Retry the original
+   creation-event workflow rather than moving or recreating a tag.
    `GITHUB_TOKEN`-created tag pushes normally do not trigger another push
    workflow. Automated tag creation and event-producing credentials, if used,
    belong to your own release process.

@@ -191,7 +191,8 @@ class PublicationTests(GitFixture):
             "GITHUB_EVENT_NAME": "push", "GITHUB_REF_TYPE": "tag", "GITHUB_REF": ref,
             "GITHUB_SHA": self.source, "GITHUB_REPOSITORY": REPOSITORY,
         }
-        event = {"ref": ref, "deleted": False, "after": self.source,
+        event = {"ref": ref, "deleted": False, "created": True, "forced": False,
+                 "before": "0" * 40, "after": self.source,
                  "repository": {"full_name": REPOSITORY}}
         return environment, event
 
@@ -239,6 +240,30 @@ class PublicationTests(GitFixture):
     def test_stable_push_event_is_accepted(self):
         environment, event = self.event()
         self.assertEqual(publication.tag_event(environment, event), (TAG, self.source, self.source))
+
+    def test_event_requires_new_tag_creation_even_when_after_matches_prepared_source(self):
+        environment, event = self.event()
+        self.assertEqual(event["after"], self.release["target_commitish"])
+        cases = [
+            {**event, field: value}
+            for field, values in (
+                ("forced", (True, None, 0, 1, "false", [], {})),
+                ("created", (False, None, 0, 1, "true", [], {})),
+                ("before", (self.base, self.source, None, 0, "", "0" * 39)),
+            )
+            for value in values
+        ]
+        cases.extend(
+            {key: value for key, value in event.items() if key != missing}
+            for missing in ("forced", "created", "before")
+        )
+        cases.extend(
+            {**event, "created": False, "forced": forced, "before": self.base}
+            for forced in (False, True)
+        )
+        for invalid in cases:
+            with self.subTest(event=invalid), self.assertRaisesRegex(ValueError, "creation push"):
+                publication.tag_event(environment, invalid)
 
     def test_event_rejects_branches_manual_deletion_mismatches_and_bad_objects(self):
         environment, event = self.event()
