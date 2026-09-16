@@ -30,7 +30,7 @@ Write maintained guides as procedures and contracts that apply to future
 installations and upgrades. Keep PR-specific test results, setup status, and
 temporary blockers in the PR or issue, not in these guides. Link to authoritative
 workflow and dependency files instead of repeating version inventories.
-Historical facts belong in the explicitly scoped provenance document.
+Record change-specific historical context in the relevant PR or commit.
 
 Use a disposable public test repository for end-to-end exercises. Test the
 human ready-for-review step and a rerun after guide merge, not just initial PR
@@ -159,14 +159,9 @@ behavior, or review/merge integration. Self-dogfooding creates no automatic
 merge, tag, or published release, and does not replace independent publication
 gates.
 
-## Compatibility and provenance
+## Compatibility
 
 Treat existing fragments and published migration URLs as durable source
 history. Keep legacy guide wrappers readable while generating standalone
 topics for new output. Explain migrations for any future incompatible
 configuration schema; reject unsupported versions rather than guessing.
-
-The original extraction baseline and intentionally excluded product concerns
-are recorded in [provenance](docs/provenance.md). Keep the original MIT
-copyright notice. Do not transplant source-product contributor instructions
-or publication credentials into this repository.

@@ -19,8 +19,6 @@ the implementation you use.
 - [Fragment template](fragment-template.md): a copyable, completed example.
 - [Local development](local-development.md): read-only preview, policy checks,
   and tests.
-- [Provenance](provenance.md): extracted behavior and intentionally excluded
-  product infrastructure.
 
 ## Develop the toolkit
 

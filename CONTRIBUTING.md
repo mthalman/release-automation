@@ -61,4 +61,3 @@ with the proposed toolkit and runs an archive of P; it needs that history.
 By submitting a contribution, you agree that it is provided under this
 repository's [MIT license](LICENSE). Preserve the original
 `Copyright (c) 2020 Matt Thalman` notice and any applicable upstream attribution.
-See [provenance](docs/provenance.md) for the extraction baseline.

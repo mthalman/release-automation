@@ -82,7 +82,6 @@ installer to deploy.
 | [Configuration reference](docs/configuration.md) | Supported JSON settings and validation rules |
 | [Workflow contract](docs/workflows.md) | Inputs, permissions, sequencing, and trust |
 | [Local development](docs/local-development.md) | Preview committed fragments and run tests |
-| [Provenance](docs/provenance.md) | Source baseline and extraction boundaries |
 
 Git versions the documentation alongside the implementation. Read documentation
 at the same commit as your workflow pins when installing, upgrading, or
