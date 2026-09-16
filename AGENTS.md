@@ -36,7 +36,12 @@ Read [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md), and the relevan
 - Generated guide PRs must be draft, with exactly the intended generated label
   categories. Do not automatically mark ready, approve, merge, or tag.
   Draft workflows must never publish.
-- Tag publication requires an actual stable tag push, tagged configuration,
+- Tag publication requires a new stable-tag creation push (`created: true`,
+  `forced: false`, `deleted: false`, and an all-zero 40-character `before` SHA).
+  Reject missing/malformed event fields and existing-tag updates, including
+  forced moves. Preserve retries of the original valid creation event without
+  claiming to prove that the tag name was never deleted and recreated.
+  Require tagged configuration,
   prepared provenance, exact committed guides/state, and default-branch
   ancestry. Prepare and finalize independently fetch Git data without checking
   out or executing consumer code. Transfer only opaque JSON context, not local

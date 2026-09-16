@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Prepare tagged release
         id: prepare
-        uses: mthalman/release-automation/actions/prepare-release@ed50b8002cf904279874f2e82b0cd5fc47e6282e
+        uses: mthalman/release-automation/actions/prepare-release@a5ef19099d02d35131b42c5d2fb4bd8fb9141c8f
 
       - name: Checkout the validated source
         if: steps.prepare.outputs.already-published != 'true'
@@ -33,6 +33,7 @@ jobs:
 
       - name: Install toolkit test dependencies
         if: steps.prepare.outputs.already-published != 'true'
+        # prepare-release configures the pinned Python 3.13 runtime for this job.
         run: python -m pip install --disable-pip-version-check -r toolkit/requirements.txt
 
       - name: Run toolkit tests
@@ -41,6 +42,6 @@ jobs:
 
       - name: Publish prepared GitHub release
         if: success()
-        uses: mthalman/release-automation/actions/finalize-release@ed50b8002cf904279874f2e82b0cd5fc47e6282e
+        uses: mthalman/release-automation/actions/finalize-release@a5ef19099d02d35131b42c5d2fb4bd8fb9141c8f
         with:
           context: ${{ steps.prepare.outputs.context }}

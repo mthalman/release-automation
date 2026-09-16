@@ -50,7 +50,8 @@ tag, or second tooling ref is required.
 5. A subsequent run verifies the generated files and state on the selected
    branch, rechecks release state and the remote commit, then creates or updates
    only a draft release, recording preparation metadata for optional tag publishing.
-6. If you install a tag workflow, a human pushes the exact prepared stable tag.
+6. If you install a tag workflow, a human creates and pushes the exact new
+   prepared stable tag. Existing-tag updates and forced moves are rejected.
    `prepare-release` checks its immutable source and prepared draft. After your
    own steps succeed, `finalize-release` independently rechecks the context and
    publishes that existing GitHub Release without changing its notes.
