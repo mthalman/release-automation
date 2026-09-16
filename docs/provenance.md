@@ -3,8 +3,8 @@
 This document records the toolkit's extraction history, not its current
 dependency versions or deployment status. The source is
 [mthalman/docker-creds-provider](https://github.com/mthalman/docker-creds-provider),
-Matt Thalman's MIT-licensed implementation. The toolkit retains the original
-`Copyright (c) 2020 Matt Thalman` notice in [LICENSE](../LICENSE).
+Matt Thalman's MIT-licensed implementation. See [LICENSE](../LICENSE) for the
+license and copyright notice.
 
 ## Extraction baseline
 
