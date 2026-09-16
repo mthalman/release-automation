@@ -1,0 +1,72 @@
+name: Shared migration policy
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: Optional version 1 JSON configuration, read from the PR base commit
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-note-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  migration-note-policy:
+    name: Validate migration notes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require a trusted PR event
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          test "$EVENT_NAME" = pull_request_target
+          test "$SERVER_URL" = https://github.com
+
+      - name: Checkout trusted toolkit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: mthalman/release-automation
+          ref: c602668ce8bf24d94b1bfd1a337c136b6c92ae1a
+          path: _release-automation
+          persist-credentials: false
+
+      - name: Checkout consumer base as data
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: consumer
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Fetch PR head only as Git data
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          [[ "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          git -C "$GITHUB_WORKSPACE/consumer" fetch --no-tags origin "refs/pull/$PR_NUMBER/head"
+          test "$(git -C "$GITHUB_WORKSPACE/consumer" rev-parse FETCH_HEAD)" = "$PR_HEAD_SHA"
+
+      - name: Validate using immutable toolkit and base configuration
+        env:
+          CONFIG_PATH: ${{ inputs.config-path }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          python -I "$GITHUB_WORKSPACE/_release-automation/toolkit/run.py" check \
+            --repo "$GITHUB_WORKSPACE/consumer" \
+            --event "$GITHUB_EVENT_PATH" \
+            --default-branch "$DEFAULT_BRANCH" \
+            --config-path "$CONFIG_PATH"

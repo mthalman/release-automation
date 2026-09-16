@@ -1,0 +1,10 @@
+{
+  "body": "## What's Changed\n\n### Breaking Changes\n\n- Request timeout default (#7) by @example\n\n<!-- migration-notes:start -->\n**Migration guides**\n\n- [Request timeout default](https://github.com/example/library/blob/main/docs/migrations/2.0.0/request-timeout.md)\n<!-- migration-notes:end -->\n",
+  "documents": {
+    ".github/migration-guides.json": "{\n  \"pending_versions\": [\n    \"2.0.0\"\n  ]\n}\n",
+    "docs/migrations/2.0.0/README.md": "# Upgrade to 2.0.0\n\nRead each migration topic that applies to your application.\n\n## Migration topics\n\n- [Request timeout default](request-timeout.md)\n",
+    "docs/migrations/2.0.0/request-timeout.md": "# Request timeout default\n\n**Version introduced:** 2.0.0\n\n## Previous behavior\n\nMeaningful previous behavior guidance.\n\n## New behavior\n\nMeaningful new behavior guidance.\n\n## Type of breaking change\n\nMeaningful type of breaking change guidance.\n\n## Reason for change\n\nMeaningful reason for change guidance.\n\n## Recommended action\n\nMeaningful recommended action guidance.\n\n## Affected APIs\n\nMeaningful affected apis guidance.\n\n```shell\n# Literal heading\necho \"$OWNER\"\n```\n",
+    "docs/migrations/README.md": "# Migration guides\n\nMigration topics are grouped by the release that introduced each breaking change.\nWhen upgrading across several releases, read the applicable topics in each version.\nReleases without migration instructions are not listed. Guides for upcoming releases\nmay appear here before publication.\n\n## Releases\n\n- [Upgrade to 2.0.0](2.0.0/README.md)\n"
+  },
+  "notes": "## Breaking changes and migration\n\n<!-- migration-topic: request-timeout -->\n### Request timeout default\n\n#### Previous behavior\n\nMeaningful previous behavior guidance.\n\n#### New behavior\n\nMeaningful new behavior guidance.\n\n#### Type of breaking change\n\nMeaningful type of breaking change guidance.\n\n#### Reason for change\n\nMeaningful reason for change guidance.\n\n#### Recommended action\n\nMeaningful recommended action guidance.\n\n#### Affected APIs\n\nMeaningful affected apis guidance.\n\n```shell\n# Literal heading\necho \"$OWNER\"\n```\n\n"
+}

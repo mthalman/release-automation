@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.os }}, Python 3.13)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - name: Install locked test dependencies
+        run: python -m pip install --disable-pip-version-check -r toolkit/requirements.txt
+      - name: Test proposed toolkit and workflow payload cohesion
+        run: python -m unittest discover -s tests -q
+
+  workflows:
+    name: Workflow validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: tools/go.mod
+          cache-dependency-path: tools/go.sum
+      - name: Build module-pinned actionlint
+        run: go -C tools build -mod=readonly -o "$RUNNER_TEMP/bin/actionlint" github.com/rhysd/actionlint/cmd/actionlint
+      - name: Validate workflows
+        run: '"$RUNNER_TEMP/bin/actionlint" -color'
+
+  drafter-contract:
+    name: Release Drafter contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Checkout the pinned dependency implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: release-drafter/release-drafter
+          ref: 34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+          path: _release-drafter
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install the dependency's locked runtime packages
+        run: npm --prefix "$GITHUB_WORKSPACE/_release-drafter" ci --ignore-scripts --omit=dev
+      - name: Exercise the actual loader, matcher and version resolver
+        run: node tests/drafter-contract.mjs "$GITHUB_WORKSPACE/_release-drafter" python
