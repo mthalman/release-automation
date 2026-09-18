@@ -1,7 +1,7 @@
 # Maintain release drafts in a consuming repository
 
-This guide covers the human steps between a merged product change and a
-reviewed draft release. For maintenance of the toolkit itself, see
+This guide covers reviewing generated guides, maintaining release drafts, and
+optionally publishing through a tag workflow. For maintenance of the toolkit itself, see
 [MAINTAINERS.md](../MAINTAINERS.md).
 
 ## Review incoming product changes
@@ -138,7 +138,11 @@ references use the same reviewed full SHA as your reusable workflows.
    edited before prepare; retain the version-only title, preparation metadata,
    and migration-links block. Metadata is a consistency record, not a signed
    attestation.
-3. Have a human create and push the exact new stable tag at the prepared source commit.
+3. Inspect the draft's `tag_name` and `target_commitish` fields using the
+   [read-only API command](tag-publishing.md#refresh-the-draft-and-push-its-tag).
+   After successful drafting, those fields identify the intended tag and full
+   prepared commit SHA. Have a human create and push that new stable tag at
+   that SHA; do not substitute the current default-branch tip.
    Annotated and lightweight tags work. The commit must remain an ancestor of
    the current default branch; it need not be that branch's latest commit.
    Existing-tag updates and forced moves are rejected. Retry the original
@@ -175,12 +179,13 @@ idempotent against your own destination's state. There is no rollback.
 | Symptom | What to check |
 | --- | --- |
 | Workflow ref cannot be resolved | Replace the installation placeholder with a reachable reviewed full wrapper SHA in both callers. |
-| Configuration not found | Commit it at the policy base or selected draft HEAD. An uncommitted worktree file does not count. |
+| Configuration not found | Check the file at the PR base for policy, the selected default-branch commit for drafting, or the tagged commit for publication. An uncommitted file does not count. |
 | Major PR fails after editing a note | Add a new fragment; editing an older one cannot document a new major change. |
 | Run fails at **Report a blocked documentation pull request** | Check token job permissions, repository Actions policy, and the create-and-approve-PR setting. |
 | Generated PR has no product CI | Have a human mark it ready and ensure CI listens to `ready_for_review`. |
 | Run fails at **Wait for merged migration guides** | Merge the exact generated files and state, then start a new run. The previous run does not resume. |
-| Run reports a changed remote commit or release | Let current work settle and rerun from the latest default-branch snapshot; do not bypass checks. |
+| Drafting reports changed source or release state | Let concurrent changes settle, then start a new drafting run; do not bypass checks. |
+| Publication reports changed source or release state | Inspect the tag and release before retrying the original creation-event run. Do not move the tag or edit the handoff context. |
 | No draft run after guide merge | Manually dispatch; bot-token event suppression can prevent a follow-up run. |
 | Version or category is unexpected | Review resolved label roles and category titles, merged PR labels, configured skip pre-exclusion, highest conflicting bump, and patch fallback. |
 | Guide deletion is rejected | Check pending state at PR base and all release-body references; do not forge state in the PR. |

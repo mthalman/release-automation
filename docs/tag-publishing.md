@@ -8,6 +8,10 @@ validation and GitHub Release publication:
 3. `actions/finalize-release` independently revalidates and publishes the
    existing GitHub Release.
 
+A reusable workflow runs as a job and cannot accept an arbitrary array of
+caller-defined steps. Composite Actions run within your job, so you can place
+your own `uses` and `run` steps between preparation and finalization.
+
 The reusable policy and drafting workflows remain unchanged in scope: each
 accepts only optional `config-path`, and neither publishes. These Actions do not
 implement registry plugins, package publishing, or executable configuration
@@ -38,46 +42,11 @@ operation. Publication still has [non-atomic API race limitations](#what-the-pub
   draft pipeline. Do not add that group to the drafting caller: the drafting
   callee already owns it.
 
-Before pushing a tag, complete review, merge exact generated documentation and
-state, and run drafting successfully. Inspect the resulting draft, source
-commit, version, migration links, CI, and approvals. A human then creates and
-pushes a new tag with the exact prepared name at that commit. Both annotated
-and lightweight tags are supported. Updates to existing tags, including forced
-moves, are rejected. Do not move a tag to repair a failed gate.
-
-Tag pushes made with a workflow's `GITHUB_TOKEN` normally do not trigger another
-push workflow. A human push avoids that event suppression. If you automate tag
-creation outside this toolkit, choosing event-producing credentials and
-protecting them remains your responsibility; these Actions provide no
-tag-creation operation.
-
 **Existing drafts need a refreshed, successful drafting run before tagging.**
-Older drafts lack the required preparation metadata. Drafting records a hidden,
-versioned metadata block in the release body with:
-
-- the tag resolved by the drafting dry run and the selected source commit;
-- the previous release tag and its commit, or an initial-release boundary;
-- a digest of the resolved configuration;
-- a digest of the published release state;
-- pending guide-version references from the draft body before its update,
-  needed to replay retention during validation.
-
-The versioned record stays minimal: configuration and published release state
-are represented by hashes, not full snapshots. The guide-reference list exists
-only to reproduce draft-time retention. The recorded tag carries forward the
-single dry-run version resolution; it does not calculate another version.
-
-The configuration digest case-folds label values to match their
-case-insensitive identities. The published-state digest covers each published
-release's ID, tag, title, prerelease flag, target commit, and body. It excludes
-assets and `updated_at`, so uploading assets to a published release alone does
-not invalidate a prepared draft.
-
-This metadata is a consistency record, **not a signed attestation**. Keep
-repository write access and workflow credentials restricted. You can edit
-non-migration release-note prose before the prepare Action runs; prepare
-captures those notes and finalize preserves them. Keep the version-only title and the
-toolkit-owned metadata and migration-links blocks intact.
+Drafts created before preparation metadata was introduced lack the required
+record. Missing or unsupported metadata fails validation; do not hand-author
+it. Follow [the tagging procedure](#refresh-the-draft-and-push-its-tag) after
+installing the workflow.
 
 ## Choose credentials and verify draft visibility
 
@@ -215,6 +184,88 @@ If you use custom configuration, add `config-path` to prepare with the same
 repository-relative path used by drafting. The file must exist in the tagged
 commit. Do not pass a local checkout or snapshot path to finalize.
 
+## Refresh the draft and push its tag
+
+First exercise this procedure in a test repository. Installing workflow files
+alone does not verify credentials, approvals, or publication behavior.
+
+1. Merge the workflow and any exact generated documentation and state through
+   your normal review process.
+2. Run drafting successfully with the reviewed toolkit revision. This refreshes
+   the preparation metadata, including on first adoption.
+3. Inspect the draft's prepared tag and commit. From a checkout of the consuming
+   repository, use an authenticated GitHub CLI session with draft visibility:
+
+   ```sh
+   gh api --hostname github.com 'repos/{owner}/{repo}/releases' --paginate --jq '.[] | select(.draft) | {id, tag_name, target_commitish, html_url}'
+   ```
+
+   Expect exactly one draft. After successful drafting, `tag_name` is the
+   intended stable tag and `target_commitish` is the full prepared commit SHA.
+   If no draft appears or multiple drafts appear, resolve visibility or draft
+   conflicts before continuing.
+4. Review that draft's version, source commit, release notes, migration links,
+   CI, and required approvals. You can edit non-migration note prose before
+   prepare runs; keep the version-only title, preparation metadata, and
+   migration-links block intact. The metadata is a consistency record, not a
+   signed attestation.
+5. Have a human create the new tag named by `tag_name` at the exact
+   `target_commitish` SHA and push it. Do not substitute the current
+   default-branch tip. Both annotated and lightweight tags are supported.
+   Existing-tag updates, including forced moves, are rejected; do not move or
+   recreate a tag to repair a failed gate.
+6. Observe prepare, the consumer steps, and finalize in the tag workflow.
+   After a successful first publication, the existing release is published
+   with its reviewed notes and title preserved.
+
+Tag pushes made with a workflow's `GITHUB_TOKEN` normally do not trigger another
+push workflow. A human push avoids that event suppression. If you automate tag
+creation outside this toolkit, choosing event-producing credentials and
+protecting them remains your responsibility; these Actions provide no
+tag-creation operation.
+
+## Verify the installation
+
+In the test repository, confirm the successful path above, then test rejection
+of existing-tag updates, forced moves, missing or malformed event flags, stale
+preparation, and changed draft metadata. Also test successful asset uploads
+between the Actions, failure propagation from consumer steps, and an exact-tag
+published rerun that skips those steps.
+
+Inspect environment approvals, token permissions, and the shared concurrency
+behavior in deployed runs. Local tests and committed workflow files are not
+evidence of repository activation or live end-to-end validation.
+
+## Rerun and recover safely
+
+Retrying the workflow for the original valid tag-creation event remains
+supported; a retry does not require another tag push. The creation-event checks
+still apply on already-published reruns.
+
+For an already-published release at the exact event tag, the Actions validate
+its preparation marker, source provenance, tagged configuration, and current
+default-branch ancestry and return
+`already-published: 'true'` without changing the release. They do not regenerate
+historical guides or compare an old preparation record against today's
+published-release state. Later releases and reviewed historical guide
+corrections must not make an exact-tag no-op rerun act like a new publication.
+An unprepared published release is not a shortcut around provenance validation.
+
+Guard all consumer build and publication steps on `already-published != 'true'`
+so an exact-tag published rerun skips external side effects. This guard does
+**not** make partial failures idempotent. If your package or artifact upload
+succeeds but a later step fails before GitHub Release publication, prepare can
+still return `'false'` on a rerun. Your scripts must detect their own completed
+external operations and verify or resume them safely. Rerunning failed jobs may
+repeat publishing unless you check the external destination's state.
+
+There is no rollback of consumer side effects. If validation fails before the
+publication PATCH, the toolkit makes no release mutation, but cannot undo an
+upload or external publication. A failure during or after the PATCH does not
+prove the release is still draft; inspect its actual state before retrying.
+Investigate changes to the tag, draft, configuration, boundary, or published
+state. Do not bypass checks or move a tag to force success.
+
 ## Action reference
 
 ### Prepare inputs
@@ -256,6 +307,33 @@ URL can differ from finalize's published URL. Neither Action synthesizes this
 output from the tag.
 
 ## What the publication checks establish
+
+### Preparation metadata
+
+Drafting records a hidden, versioned metadata block in the release body with:
+
+- the tag resolved by the drafting dry run and the selected source commit;
+- the previous release tag and its commit, or an initial-release boundary;
+- a digest of the resolved configuration;
+- a digest of the published release state;
+- pending guide-version references from the draft body before its update,
+  needed to replay retention during validation.
+
+The versioned record stays minimal: configuration and published release state
+are represented by hashes, not full snapshots. The guide-reference list exists
+only to reproduce draft-time retention. The recorded tag carries forward the
+single dry-run version resolution; it does not calculate another version.
+
+The configuration digest case-folds label values to match their
+case-insensitive identities. The published-state digest covers each published
+release's ID, tag, title, prerelease flag, target commit, and body. It excludes
+assets and `updated_at`, so uploading assets to a published release alone does
+not invalidate a prepared draft.
+
+This metadata is a consistency record, **not a signed attestation**. Keep
+repository write access and workflow credentials restricted.
+
+### Source and release validation
 
 Prepare and finalize each fetch immutable Git data into an isolated temporary
 Git repository. Neither checks out or executes consumer code. A consumer checkout
@@ -385,46 +463,3 @@ snapshot. Each Action reconstructs its own Git data and runtime. Artifacts can
 transport your build outputs between runners, but are not a transport for
 toolkit local paths or trusted release state. All jobs must retain the same
 tag-push event; this is not a handoff to a manually dispatched workflow.
-
-## Rerun and recover safely
-
-Retrying the workflow for the original valid tag-creation event remains
-supported; a retry does not require another tag push. The creation-event checks
-still apply on already-published reruns.
-
-For an already-published release at the exact event tag, the Actions validate
-its preparation marker, source provenance, tagged configuration, and current
-default-branch ancestry and return
-`already-published: 'true'` without changing the release. They do not regenerate
-historical guides or compare an old preparation record against today's
-published-release state. Later releases and reviewed historical guide
-corrections must not make an exact-tag no-op rerun act like a new publication.
-An unprepared published release is not a shortcut around provenance validation.
-
-Guard all consumer build and publication steps on `already-published != 'true'`
-so an exact-tag published rerun skips external side effects. This guard does
-**not** make partial failures idempotent. If your package or artifact upload
-succeeds but a later step fails before GitHub Release publication, prepare can
-still return `'false'` on a rerun. Your scripts must detect their own completed
-external operations and verify or resume them safely. Rerunning failed jobs may
-repeat publishing unless you check the external destination's state.
-
-There is no rollback of consumer side effects. If validation fails before the
-publication PATCH, the toolkit makes no release mutation, but cannot undo an
-upload or external publication. A failure during or after the PATCH does not
-prove the release is still draft; inspect its actual state before retrying.
-Investigate changes to the tag, draft, configuration, boundary, or published state. Do not bypass
-checks or move a tag to force success.
-
-## Verify the installation
-
-In a test repository, observe a successful refreshed draft, a human tag push,
-successful consumer steps, and publication of that existing release with notes
-and title preserved. Test rejection of existing-tag updates, forced moves,
-missing or malformed event flags, stale preparation, and changed draft metadata.
-Also test successful asset uploads between the Actions, failure propagation
-from consumer steps, and an exact-tag published rerun that skips those steps.
-
-Inspect environment approvals, token permissions, and the shared concurrency
-behavior in deployed runs. Local tests and committed workflow files are not
-evidence of repository activation or live end-to-end validation.
