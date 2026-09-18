@@ -100,10 +100,18 @@ deployment before adding it to a ruleset. The toolkit does not manage rulesets.
 ## Release draft sequence
 
 One concurrency group, `release-drafter`, serializes the **entire** pipeline
-with `cancel-in-progress: false`. Keep this group in the reusable workflow,
-not duplicated in the drafting caller. A separate consumer tag-publishing
-workflow must use the same group with cancellation disabled to serialize
+with `cancel-in-progress: false` and `queue: max`. Keep this group in the reusable
+workflow, not duplicated in the drafting caller. A separate consumer
+tag-publishing workflow must use the same group with both settings to serialize
 prepare, consumer steps, and finalize against drafting.
+
+Set `queue: max` on **both** participants. The default `queue: single` lets a new
+draft run cancel a pending publication run even when cancellation of in-progress
+runs is disabled. GitHub allows up to 100 pending runs with `queue: max`; it
+cancels additional runs when the queue is full. Runs are ordered by when they
+start waiting on the group, not necessarily by dispatch time. See
+[GitHub's concurrency documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+This does not change migration policy's separate per-PR cancellation behavior.
 
 The run follows this order:
 

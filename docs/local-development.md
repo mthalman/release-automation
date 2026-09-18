@@ -133,6 +133,15 @@ CI listens to ordinary `pull_request` events, including
 `ready_for_review`, pushes to `main`, and manual dispatch. It tests the proposed
 toolkit code; the separate trusted policy workflow validates PR data.
 
+Actionlint 1.7.12 does not yet recognize GitHub's supported `concurrency.queue`
+key. The [actionlint configuration](../.github/actionlint.yaml) suppresses only
+its exact unexpected-`queue` diagnostic in `release-draft.yml` and `publish.yml`;
+other diagnostics remain enabled. The
+[workflow tests](../tests/test_workflows.py) require `queue: max`, cancellation
+disabled, and the shared group on both workflows and in the publication example,
+and reject duplicate caller locks. Remove this compatibility suppression when
+the pinned linter supports `queue`.
+
 CI also runs [dependency contract tests](../tests/drafter-contract.mjs) on
 Linux with Node 24 and Python 3.13. They load the actual pinned Release Drafter
 implementation and exercise its file loader, category matcher, and version

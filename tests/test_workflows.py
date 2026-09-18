@@ -115,8 +115,29 @@ class WorkflowContractTests(unittest.TestCase):
             r"\n\s+allow:\n\s+- dependency-type: all",
         )
 
+    def test_actionlint_queue_compatibility_suppression_is_narrow(self):
+        text = (ROOT / ".github" / "actionlint.yaml").read_text(encoding="utf-8")
+        diagnostic = (
+            r'^unexpected key "queue" for "concurrency" section\. '
+            r'expected one of "cancel-in-progress", "group"$'
+        )
+        expected = "paths:\n" + "".join(
+            f"  .github/workflows/{name}:\n"
+            f"    ignore:\n"
+            f"      - '{diagnostic}'\n"
+            for name in ("release-draft.yml", "publish.yml")
+        )
+        self.assertEqual(text, expected)
+
     def test_policy_has_no_head_checkout_or_dependency_install(self):
         text = (WORKFLOWS / "migration-policy.yml").read_text(encoding="utf-8")
+        self.assertIn(
+            "\nconcurrency:\n"
+            "  group: migration-note-policy-${{ github.event.pull_request.number }}\n"
+            "  cancel-in-progress: true\n\n",
+            text,
+        )
+        self.assertNotRegex(text, r"(?m)^\s*queue:")
         self.assertIn("ref: ${{ github.event.pull_request.base.sha }}", text)
         self.assertNotIn("ref: ${{ github.event.pull_request.head.sha }}", text)
         self.assertIn('fetch --no-tags origin "refs/pull/$PR_NUMBER/head"', text)
@@ -156,9 +177,49 @@ class WorkflowContractTests(unittest.TestCase):
             self.assertEqual(base, git(consumer, "rev-parse", "HEAD"))
             self.assertFalse((consumer / "head-only.txt").exists())
 
+    def test_release_workflows_preserve_pending_runs(self):
+        for name in ("release-draft.yml", "publish.yml"):
+            with self.subTest(workflow=name):
+                text = (WORKFLOWS / name).read_text(encoding="utf-8")
+                self.assertIn(
+                    "\nconcurrency:\n"
+                    "  group: release-drafter\n"
+                    "  cancel-in-progress: false\n"
+                    "  queue: max\n\n",
+                    text,
+                )
+                self.assertEqual(len(re.findall(r"(?m)^\s*concurrency:", text)), 1)
+        caller = (WORKFLOWS / "release.yml").read_text(encoding="utf-8")
+        self.assertNotRegex(caller, r"(?m)^\s*concurrency:")
+
+    def test_documented_release_queue_and_caller_lock_placement(self):
+        for name in ("installation.md", "workflows.md", "tag-publishing.md"):
+            with self.subTest(document=name):
+                text = (ROOT / "docs" / name).read_text(encoding="utf-8")
+                self.assertIn("`queue: max`", text)
+        for name, workflow_count in (("installation.md", 2), ("tag-publishing.md", 1)):
+            text = (ROOT / "docs" / name).read_text(encoding="utf-8")
+            workflows = [
+                block for block in re.findall(r"```yaml\n(.*?)\n```", text, re.DOTALL)
+                if re.search(r"(?m)^on:", block)
+            ]
+            self.assertEqual(len(workflows), workflow_count)
+            for block in workflows:
+                with self.subTest(document=name, workflow=block.splitlines()[0]):
+                    if name == "tag-publishing.md":
+                        self.assertIn(
+                            "\nconcurrency:\n"
+                            "  group: release-drafter\n"
+                            "  cancel-in-progress: false\n"
+                            "  queue: max\n\n",
+                            block,
+                        )
+                        self.assertEqual(len(re.findall(r"(?m)^\s*concurrency:", block)), 1)
+                    else:
+                        self.assertNotRegex(block, r"(?m)^\s*concurrency:")
+
     def test_draft_serializes_entire_lifecycle(self):
         text = (WORKFLOWS / "release-draft.yml").read_text(encoding="utf-8")
-        self.assertIn("group: release-drafter\n  cancel-in-progress: false", text)
         positions = [
             text.index(f"- name: {name}")
             for name in (
@@ -234,7 +295,6 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn('tags: ["v*"]', text)
         self.assertNotIn("workflow_dispatch", text)
         self.assertNotIn("pull_request", text)
-        self.assertIn("group: release-drafter\n  cancel-in-progress: false", text)
         positions = [
             text.index(f"- name: {name}") for name in (
                 "Prepare tagged release", "Checkout the validated source",

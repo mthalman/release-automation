@@ -110,8 +110,9 @@ jobs:
 ```
 
 Do not add the reusable workflow's concurrency group to this caller. The callee
-serializes the entire draft pipeline with cancellation disabled; duplicating
-the group can cause caller/callee contention.
+serializes the entire draft pipeline with `group: release-drafter`,
+`cancel-in-progress: false`, and `queue: max`; duplicating the group can cause
+caller/callee contention.
 
 Even on manual dispatch, the workflow selects the latest repository
 default-branch snapshot, not an arbitrary dispatch branch.
@@ -180,8 +181,17 @@ It calls `actions/prepare-release`, runs your arbitrary `uses` and `run` steps,
 then calls `actions/finalize-release` only after those steps succeed. Pin both
 Actions to the same reviewed full SHA as the reusable workflows.
 
-The tag workflow shares concurrency group `release-drafter` with cancellation
-disabled. Do not add that group to the drafting caller from step 5.
+Set `group: release-drafter`, `cancel-in-progress: false`, and `queue: max`
+on your tag workflow. The reusable draft workflow at this revision already
+uses those settings. When upgrading, update your toolkit pins and your tag
+workflow together. Do not add a concurrency group to the drafting caller
+from step 5.
+
+Both workflows must use `queue: max`; otherwise a new draft run can replace
+a pending publication run. GitHub allows up to 100 pending runs in the group
+and cancels additional runs when the queue is full. See the
+[concurrency contract](workflows.md#release-draft-sequence).
+
 Grant `contents: write` at the publication job, not workflow-wide, and keep
 product credentials and approvals in your repository. Verify that prepare's
 token can see draft releases. GitHub can also require workflow-modification
