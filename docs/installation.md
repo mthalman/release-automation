@@ -9,7 +9,8 @@ edit workflows, and merge changes through the repository's review process.
 The repository must use one stable release stream with `vMAJOR.MINOR.PATCH`
 tags on its actual default branch. Existing stable release history must be
 available in Git. The toolkit does not convert existing product release
-pipelines or create a first published release for you.
+pipelines. These two workflows produce drafts, including for an initial release;
+publication is a separate, optional installation.
 
 ## 1. Select a reviewed commit
 
@@ -19,7 +20,8 @@ Choose a reviewed, reachable, full commit SHA from
 ref. Replace it before committing the examples.
 
 The selected wrapper commit already pins its toolkit payload. You do not supply
-a second tooling ref. Keep both caller refs synchronized on future upgrades.
+a second tooling ref. Keep both caller refs and any optional publication Action
+refs synchronized on future upgrades.
 
 ## 2. Enable repository permissions
 
@@ -170,3 +172,29 @@ draft run if the merge does not trigger one. See
 Installation is verified only after you observe policy validation, the human
 review/CI path, and a successful post-merge draft run in your own repository.
 The examples alone are not evidence of live workflow validation.
+
+## 8. Optionally install tag publishing
+
+Follow [tag publishing](tag-publishing.md) to add a separate tag-push workflow.
+It calls `actions/prepare-release`, runs your arbitrary `uses` and `run` steps,
+then calls `actions/finalize-release` only after those steps succeed. Pin both
+Actions to the same reviewed full SHA as the reusable workflows.
+
+The tag workflow shares concurrency group `release-drafter` with cancellation
+disabled. Do not add that group to the drafting caller from step 5.
+Grant `contents: write` at the publication job, not workflow-wide, and keep
+product credentials and approvals in your repository. Verify that prepare's
+token can see draft releases. GitHub can also require workflow-modification
+authorization to publish an older target after workflow files change on the
+default branch; `GITHUB_TOKEN` cannot receive that authorization. See
+[publication credential requirements](tag-publishing.md#choose-credentials-and-verify-draft-visibility)
+before relying on the default token.
+
+After installing or upgrading, run drafting successfully to refresh preparation
+metadata before a human pushes a release tag. Old drafts without that metadata
+cannot be published through the Actions, including on first adoption. A tag push
+made with `GITHUB_TOKEN` normally does not trigger another push workflow; use a
+human push or your own reviewed event-producing credentials outside the toolkit.
+Installing files does not establish
+that settings, permissions, or live end-to-end publication have been verified;
+exercise the tag workflow separately in a test repository.

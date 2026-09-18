@@ -9,6 +9,15 @@ commit for policy checks and the selected default-branch commit for drafting.
 Both workflows read configuration directly from that commit's Git objects,
 not from an arbitrary checked-out or uncommitted worktree.
 
+The optional [tag-publishing Actions](tag-publishing.md) use the same schema.
+Prepare accepts optional `config-path`; finalize receives that selection in
+prepare's opaque `context`. Both read configuration from the **tagged commit**,
+not the newer default-branch HEAD. A later default-branch configuration change
+does not invalidate an otherwise valid prepared tag. The resolved tagged
+configuration must match the digest recorded when drafting prepared the release.
+That digest case-folds label values to preserve case-insensitive label identity;
+other resolved configuration values retain their exact values.
+
 ## Complete defaults
 
 The following JSON is a valid explicit configuration:
@@ -59,7 +68,8 @@ versions, duplicate JSON keys, and wrong value types fail validation.
 
 `default_branch` is **not** a configuration setting. Workflows discover it from
 GitHub repository metadata. Tag prefixes, release-name templates, execution
-hooks, and publication settings are also not configurable.
+hooks, and publication settings are also not configurable. Configure arbitrary
+build and publication steps in the consumer's tag workflow, not this JSON file.
 
 ## Path constraints
 

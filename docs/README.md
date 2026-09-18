@@ -9,6 +9,7 @@ the implementation you use.
 1. [Install the workflows](installation.md).
 2. [Label pull requests and write fragments](author-guide.md).
 3. [Review generated guides and prepare releases](maintainer-guide.md).
+4. Optionally [publish from a tag with consumer-owned steps](tag-publishing.md).
 
 ## Look up details
 
@@ -16,6 +17,8 @@ the implementation you use.
   values.
 - [Workflow contract](workflows.md): permissions, trusted inputs, ordered
   operations, and limitations.
+- [Tag publishing](tag-publishing.md): prepare/finalize inputs and outputs,
+  publication checks, custom steps, reruns, and cross-job context.
 - [Fragment template](fragment-template.md): a copyable, completed example.
 - [Local development](local-development.md): read-only preview, policy checks,
   and tests.

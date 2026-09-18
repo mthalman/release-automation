@@ -618,7 +618,7 @@ class MigrationNotesTests(unittest.TestCase):
         )
         self.assertNotIn("#### Previous behavior", payload["body"])
         self.assertTrue(payload["body"].startswith("## What's Changed\n\n### Breaking Changes\n"))
-        self.assertTrue(payload["body"].endswith("- Product fix"))
+        self.assertTrue(payload["body"].split("<!-- release-automation: ")[0].rstrip().endswith("- Product fix"))
         self.assertNotIn("migration-base:", payload["body"])
         self.assertEqual(self.git("status", "--porcelain"), "")
         with patch("update_release_draft.api") as api:

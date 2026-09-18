@@ -1,0 +1,47 @@
+name: Publish tagged release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-drafter
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Validate toolkit and publish prepared release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Prepare tagged release
+        id: prepare
+        uses: mthalman/release-automation/actions/prepare-release@74a59b7838ffe965aa3549c74d929761d5c62f16
+
+      - name: Checkout the validated source
+        if: steps.prepare.outputs.already-published != 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ steps.prepare.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install toolkit test dependencies
+        if: steps.prepare.outputs.already-published != 'true'
+        # prepare-release configures the pinned Python 3.13 runtime for this job.
+        run: python -m pip install --disable-pip-version-check -r toolkit/requirements.txt
+
+      - name: Run toolkit tests
+        if: steps.prepare.outputs.already-published != 'true'
+        run: python -m unittest discover -s tests -q
+
+      - name: Publish prepared GitHub release
+        if: success()
+        uses: mthalman/release-automation/actions/finalize-release@74a59b7838ffe965aa3549c74d929761d5c62f16
+        with:
+          context: ${{ steps.prepare.outputs.context }}

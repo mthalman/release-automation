@@ -14,7 +14,7 @@ from repository import committed_file, git
 FRAGMENTS = ".changes"
 GUIDE_STATE = ".github/migration-guides.json"
 FILENAME = re.compile(r"\+[a-z0-9]+(?:-[a-z0-9]+)*\.breaking\.md")
-STABLE_TAG = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
+STABLE_TAG = re.compile(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", re.ASCII)
 MIGRATION_START = "<!-- migration-notes:start -->"
 MIGRATION_END = "<!-- migration-notes:end -->"
 TOPIC_MARKER_PREFIX = "<!-- migration-topic:"

@@ -1,7 +1,7 @@
 # Maintain release drafts in a consuming repository
 
-This guide covers the human steps between a merged product change and a
-reviewed draft release. For maintenance of the toolkit itself, see
+This guide covers reviewing generated guides, maintaining release drafts, and
+optionally publishing through a tag workflow. For maintenance of the toolkit itself, see
 [MAINTAINERS.md](../MAINTAINERS.md).
 
 ## Review incoming product changes
@@ -20,9 +20,10 @@ unless explicitly assigned to a role; unrelated labels do not count as
 configured version, category, or exclusion labels. See the
 [configuration reference](configuration.md#branch-label-and-title-constraints).
 
-Keep the two workflow pins synchronized. Your repository owns its labels,
-rulesets, CI triggers, approval requirements, release credentials, and
-publication pipeline.
+Keep the two workflow pins and any optional prepare/finalize Action pins
+synchronized at the same reviewed full SHA. Your repository owns its labels,
+rulesets, CI triggers, approval requirements, runners, release credentials,
+assets, and publication pipeline.
 
 ## Review the generated pull request
 
@@ -112,7 +113,9 @@ manually delete a version directory to resolve a draft conflict.
 Once generated documentation and state match the selected branch exactly, the
 workflow rechecks releases, the remote default-branch commit, and readiness
 before creating or patching a draft release. It does not create a tag or
-publish the release.
+publish the release. A successful run adds hidden versioned preparation
+metadata recording the source commit, previous tag and commit, resolved
+configuration digest, and published release state digest.
 
 These API checks are **not atomic with human actions**. Another maintainer can
 publish or change a release between requests. Before publication, independently
@@ -122,20 +125,76 @@ links, CI, artifacts, and required approvals.
 The toolkit's pre-draft readiness is not your publication gate. Keep publication
 credentials and product-specific gates in your own release process.
 
+## Optionally publish through a tag workflow
+
+Install the separate [tag workflow](tag-publishing.md) to use
+`actions/prepare-release` and `actions/finalize-release`. Both external Action
+references use the same reviewed full SHA as your reusable workflows.
+
+1. Refresh any existing draft with a successful drafting run, after exact
+   generated guides and state are merged. Old drafts without preparation
+   metadata cannot use this publication path.
+2. Review the draft and all product gates. Non-migration note prose can be
+   edited before prepare; retain the version-only title, preparation metadata,
+   and migration-links block. Metadata is a consistency record, not a signed
+   attestation.
+3. Inspect the draft's `tag_name` and `target_commitish` fields using the
+   [read-only API command](tag-publishing.md#refresh-the-draft-and-push-its-tag).
+   After successful drafting, those fields identify the intended tag and full
+   prepared commit SHA. Have a human create and push that new stable tag at
+   that SHA; do not substitute the current default-branch tip.
+   Annotated and lightweight tags work. The commit must remain an ancestor of
+   the current default branch; it need not be that branch's latest commit.
+   Existing-tag updates and forced moves are rejected. Retry the original
+   creation-event workflow rather than moving or recreating a tag.
+   `GITHUB_TOKEN`-created tag pushes normally do not trigger another push
+   workflow. Automated tag creation and event-producing credentials, if used,
+   belong to your own release process.
+4. Let prepare validate the tagged configuration and recorded boundary,
+   committed guides/state, migration links, and sole matching draft. Place
+   your own `uses` and `run` steps after it, guarded by
+   `already-published != 'true'`. Uploads are allowed; relevant draft metadata
+   must remain unchanged after prepare.
+5. Run finalize only after every required consumer step or job succeeds.
+   Finalize independently rechecks the opaque context and publishes only
+   that existing release, preserving its notes and title.
+
+A newer default-branch configuration does not replace the tagged configuration.
+Unrelated or multiple drafts, stale preparation, or changed tag objects fail
+rather than prompting automatic repair. Neither Action sends retagging requests
+or writes guides. Rechecks are non-atomic; shared `release-drafter` concurrency
+does not lock out human writers. If someone deletes a tag between the final
+check and publication, GitHub can recreate it while publishing the release.
+Concurrent release edits can also race the PATCH. A post-response failure does
+not roll back a publication that already happened.
+
+An exact-tag published rerun validates provenance, returns
+`already-published: 'true'`, and makes no release edits. Consumer guards skip
+external side effects on that path. A partially failed run can still repeat
+external publishing before GitHub Release publication; make those operations
+idempotent against your own destination's state. There is no rollback.
+
 ## Troubleshoot a run
 
 | Symptom | What to check |
 | --- | --- |
 | Workflow ref cannot be resolved | Replace the installation placeholder with a reachable reviewed full wrapper SHA in both callers. |
-| Configuration not found | Commit it at the policy base or selected draft HEAD. An uncommitted worktree file does not count. |
+| Configuration not found | Check the file at the PR base for policy, the selected default-branch commit for drafting, or the tagged commit for publication. An uncommitted file does not count. |
 | Major PR fails after editing a note | Add a new fragment; editing an older one cannot document a new major change. |
 | Run fails at **Report a blocked documentation pull request** | Check token job permissions, repository Actions policy, and the create-and-approve-PR setting. |
 | Generated PR has no product CI | Have a human mark it ready and ensure CI listens to `ready_for_review`. |
 | Run fails at **Wait for merged migration guides** | Merge the exact generated files and state, then start a new run. The previous run does not resume. |
-| Run reports a changed remote commit or release | Let current work settle and rerun from the latest default-branch snapshot; do not bypass checks. |
+| Drafting reports changed source or release state | Let concurrent changes settle, then start a new drafting run; do not bypass checks. |
+| Publication reports changed source or release state | Inspect the tag and release before retrying the original creation-event run. Do not move the tag or edit the handoff context. |
 | No draft run after guide merge | Manually dispatch; bot-token event suppression can prevent a follow-up run. |
 | Version or category is unexpected | Review resolved label roles and category titles, merged PR labels, configured skip pre-exclusion, highest conflicting bump, and patch fallback. |
 | Guide deletion is rejected | Check pending state at PR base and all release-body references; do not forge state in the PR. |
+| Prepare rejects an old draft | Run the updated drafting workflow successfully before tagging; do not hand-author preparation metadata. |
+| Prepare cannot find a draft that exists | Verify the token identity can see drafts. Read-only endpoint permission does not guarantee draft visibility. |
+| Prepare reports conflicting drafts | Review and resolve unrelated or multiple drafts through your normal release process. |
+| Finalize reports changed context | Inspect tag movement, draft edits, and release-state changes; do not alter context or bypass the check. Asset uploads alone are allowed. |
+| Finalize receives `403` or `404` | Check repository access and whether the target differs from the current default branch in workflow files. GitHub may require workflow-modification authorization unavailable to `GITHUB_TOKEN`; see [credential requirements](tag-publishing.md#choose-credentials-and-verify-draft-visibility). |
+| Consumer publish step fails on rerun | Check the external destination for prior successful side effects; a still-draft GitHub Release does not prove nothing was published elsewhere. |
 
 For local reproduction, use the [read-only commands](local-development.md).
 Include the workflow pin, selected commit, non-sensitive configuration, and
