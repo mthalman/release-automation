@@ -174,7 +174,8 @@ Between prepare and finalize, the tag workflow checks out the validated source
 SHA and runs toolkit tests as this repository's consumer-owned steps. Both
 steps are guarded by `already-published != 'true'`; the Actions themselves do
 not check out consumer code. The workflow shares `release-drafter` concurrency
-with drafting, with cancellation disabled.
+with drafting, with `cancel-in-progress: false` and `queue: max` on both
+participants so new draft runs do not replace pending publication runs.
 It does not turn a successful draft run into a tag push: humans push tags
 only after the review and draft gates pass. This self-dogfooding workflow
 publishes the toolkit's GitHub Release, not a consumer package pipeline.

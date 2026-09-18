@@ -38,9 +38,12 @@ operation. Publication still has [non-atomic API race limitations](#what-the-pub
   permissions; see [credential requirements](#choose-credentials-and-verify-draft-visibility).
   Do not grant `id-token: write` unless your own steps require it.
 - Serialize the **whole tag workflow** with concurrency group
-  `release-drafter` and `cancel-in-progress: false`, shared with the reusable
-  draft pipeline. Do not add that group to the drafting caller: the drafting
-  callee already owns it.
+  `release-drafter`, `cancel-in-progress: false`, and `queue: max`, shared with
+  the reusable draft pipeline. Both participants must use `queue: max` so a new
+  draft run does not replace a pending publication run. GitHub allows up to 100
+  pending runs and cancels additional runs when the queue is full. Do not add
+  that group to the drafting caller: the drafting callee already owns it.
+  See the [concurrency contract](workflows.md#release-draft-sequence).
 
 **Existing drafts need a refreshed, successful drafting run before tagging.**
 Drafts created before preparation metadata was introduced lack the required
@@ -106,6 +109,7 @@ permissions:
 concurrency:
   group: release-drafter
   cancel-in-progress: false
+  queue: max
 
 jobs:
   publish:
@@ -233,8 +237,10 @@ between the Actions, failure propagation from consumer steps, and an exact-tag
 published rerun that skips those steps.
 
 Inspect environment approvals, token permissions, and the shared concurrency
-behavior in deployed runs. Local tests and committed workflow files are not
-evidence of repository activation or live end-to-end validation.
+behavior in deployed runs. While a run holds `release-drafter`, queue a tag
+publication followed by a draft push and verify both remain pending instead
+of the draft push canceling publication. Local tests and committed workflow
+files are not evidence of repository activation or live end-to-end validation.
 
 ## Rerun and recover safely
 
@@ -414,8 +420,9 @@ not a publication gate by itself.
 ## Split consumer work across jobs
 
 You can run prepare, consumer work, and finalize in separate jobs of the same
-tag-event workflow. Keep workflow-level concurrency, and pin both Actions to
-the same W. Map the prepare step outputs to job outputs:
+tag-event workflow. Keep workflow-level `release-drafter` concurrency with
+`cancel-in-progress: false` and `queue: max`, and pin both Actions to the same W.
+Map the prepare step outputs to job outputs:
 
 ```yaml
 outputs:

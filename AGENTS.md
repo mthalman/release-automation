@@ -28,9 +28,11 @@ Read [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md), and the relevan
   `pull_request_target`. Use the immutable, standard-library-only validator.
 - Read draft configuration from the selected default-branch commit, not an
   arbitrary worktree. Discover the default branch through GitHub metadata.
-- Keep the entire draft pipeline serialized with `cancel-in-progress: false`.
+- Keep the entire draft pipeline serialized with `cancel-in-progress: false`
+  and `queue: max`.
   Do not add the same concurrency group to the drafting caller. The separate
-  consumer tag workflow must share `release-drafter` with cancellation disabled.
+  consumer tag workflow must share `release-drafter` with cancellation disabled
+  and `queue: max` so new draft runs do not replace pending publication runs.
 - Resolve release version and previous tag once through the dry run. Require
   exact committed guides and state before any draft-release mutation.
 - Generated guide PRs must be draft, with exactly the intended generated label
