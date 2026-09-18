@@ -237,10 +237,12 @@ between the Actions, failure propagation from consumer steps, and an exact-tag
 published rerun that skips those steps.
 
 Inspect environment approvals, token permissions, and the shared concurrency
-behavior in deployed runs. While a run holds `release-drafter`, queue a tag
-publication followed by a draft push and verify both remain pending instead
-of the draft push canceling publication. Local tests and committed workflow
-files are not evidence of repository activation or live end-to-end validation.
+behavior in deployed runs. In the test repository, keep a workflow run active
+in `release-drafter`. Push a prepared release tag and wait until its publication
+run is pending. Then push to the default branch. While the first run remains
+active, verify that both new runs remain pending and neither is canceled.
+Local tests and committed workflow files are not evidence of repository
+activation or live end-to-end validation.
 
 ## Rerun and recover safely
 
