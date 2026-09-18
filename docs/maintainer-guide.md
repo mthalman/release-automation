@@ -21,7 +21,9 @@ configured version, category, or exclusion labels. See the
 [configuration reference](configuration.md#branch-label-and-title-constraints).
 
 Keep the two workflow pins and any optional prepare/finalize Action pins
-synchronized at the same reviewed full SHA. Your repository owns its labels,
+synchronized at the same reviewed full SHA and matching stable-tag comment.
+Follow [upgrading toolkit pins](upgrading.md) to group Dependabot updates and
+refresh SHA-pinned Markdown links in the same PR. Your repository owns its labels,
 rulesets, CI triggers, approval requirements, runners, release credentials,
 assets, and publication pipeline.
 

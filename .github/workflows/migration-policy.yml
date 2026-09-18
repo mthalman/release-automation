@@ -30,15 +30,16 @@ jobs:
           test "$SERVER_URL" = https://github.com
 
       - name: Checkout trusted toolkit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: mthalman/release-automation
+          # Internal payload P; update only through the MAINTAINERS.md protocol.
           ref: 74a59b7838ffe965aa3549c74d929761d5c62f16
           path: _release-automation
           persist-credentials: false
 
       - name: Checkout consumer base as data
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.base.sha }}

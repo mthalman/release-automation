@@ -23,7 +23,10 @@ operation. Publication still has [non-atomic API race limitations](#what-the-pub
 - Install and verify [drafting and policy](installation.md). Use github.com,
   one stable release stream, and exact `vMAJOR.MINOR.PATCH` tags.
 - Pin both Actions and the reusable workflows to the same reviewed, reachable,
-  full commit SHA **W**. The placeholder below is not a usable reference.
+  full toolkit release commit SHA **W**. Each trailing comment names the
+  **toolkit release tag** that resolves to W, not the product release tag that
+  triggers this workflow. Follow [release verification and upgrade guidance](upgrading.md).
+  The SHA and tag placeholders below are not usable references.
   Consumers do not select a second toolkit ref. The Actions load packaged
   scripts relative to `github.action_path`; they do not use scripts from your
   checkout.
@@ -87,7 +90,10 @@ credentials in a test deployment before relying on the workflow.
 ## Add a tag workflow with your own steps
 
 This example is a consumer-owned `.github/workflows/publish.yml`. Replace every
-`REPLACE_WITH_REVIEWED_COMMIT_SHA` with the same full W SHA. The checkout and
+`REPLACE_WITH_REVIEWED_COMMIT_SHA` with the same full W SHA and every
+`vMAJOR.MINOR.PATCH` comment with the stable toolkit release tag that resolves to W.
+For unreleased pins, use the [explicit exception](upgrading.md#use-an-unreleased-commit-only-as-an-explicit-exception).
+The checkout and
 setup-node pins are reviewed dependency examples; review them for your own
 repository.
 
@@ -119,18 +125,18 @@ jobs:
     steps:
       - name: Prepare release
         id: prepare
-        uses: mthalman/release-automation/actions/prepare-release@REPLACE_WITH_REVIEWED_COMMIT_SHA
+        uses: mthalman/release-automation/actions/prepare-release@REPLACE_WITH_REVIEWED_COMMIT_SHA # vMAJOR.MINOR.PATCH
 
       - name: Check out the validated source for consumer steps
         if: steps.prepare.outputs.already-published != 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ steps.prepare.outputs.sha }}
           persist-credentials: false
 
       - name: Set up the consumer build runtime
         if: steps.prepare.outputs.already-published != 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
 
@@ -154,7 +160,7 @@ jobs:
 
       - name: Finalize GitHub Release
         if: steps.prepare.outputs.already-published != 'true'
-        uses: mthalman/release-automation/actions/finalize-release@REPLACE_WITH_REVIEWED_COMMIT_SHA
+        uses: mthalman/release-automation/actions/finalize-release@REPLACE_WITH_REVIEWED_COMMIT_SHA # vMAJOR.MINOR.PATCH
         with:
           context: ${{ steps.prepare.outputs.context }}
 ```
@@ -423,7 +429,8 @@ not a publication gate by itself.
 
 You can run prepare, consumer work, and finalize in separate jobs of the same
 tag-event workflow. Keep workflow-level `release-drafter` concurrency with
-`cancel-in-progress: false` and `queue: max`, and pin both Actions to the same W.
+`cancel-in-progress: false` and `queue: max`, and pin both Actions to the same W
+with matching stable-tag comments.
 Map the prepare step outputs to job outputs:
 
 ```yaml
@@ -452,7 +459,7 @@ finalize:
   permissions:
     contents: write
   steps:
-    - uses: mthalman/release-automation/actions/finalize-release@REPLACE_WITH_REVIEWED_COMMIT_SHA
+    - uses: mthalman/release-automation/actions/finalize-release@REPLACE_WITH_REVIEWED_COMMIT_SHA # vMAJOR.MINOR.PATCH
       with:
         context: ${{ needs.prepare.outputs.context }}
 ```

@@ -87,7 +87,10 @@ Two commits avoid a circular hash dependency:
 6. Run wrapper/payload consistency tests and workflow lint. Commit the wrapper
    changes as **W**, then push W.
 7. Test consumers against W. Publish the reviewed full W SHA in installation
-   guidance or upgrade instructions once it is reachable.
+   guidance or upgrade instructions once it is reachable. For a published
+   stable release, pair its exact commit SHA with the matching trailing
+   `# vMAJOR.MINOR.PATCH` comment. Until such a release exists, document an
+   unreleased-pin exception rather than inventing a version comment.
 8. State **merge commit required; do not squash or rebase** in the PR
    description, and use that merge strategy. Verify that P and W remain
    reachable in default-branch history after merge.
@@ -98,7 +101,19 @@ Actions use the toolkit packaged at W. Verify that packaged toolkit matches
 the tested payload. Never insert W
 into its own contents, substitute an invented SHA, or publish a wrapper before
 its payload is reachable. Installation examples use
-`REPLACE_WITH_REVIEWED_COMMIT_SHA` to require an explicit version selection.
+`REPLACE_WITH_REVIEWED_COMMIT_SHA # vMAJOR.MINOR.PATCH` to require an explicit
+SHA and matching tag selection. A release tag must resolve to the pinned commit,
+not merely an ancestor of it.
+
+Internal P pins are **not public wrapper release pins**. Keep the wrappers'
+trusted `with.ref` values and the self-dogfooding prepare/finalize `uses`
+references on the same tested P, without release-tag or branch-name comments.
+Do not attach W's release tag to P. Dependency automation must not update the
+self-dogfooding Actions independently of payload equivalence and this protocol.
+The GitHub Actions entry in `.github/dependabot.yml` ignores this repository's
+own dependency name and subpaths for that reason. Missing version comments
+alone do not prevent Dependabot updates. Preserve equivalent exclusions if
+changing dependency tools; do not copy the consumer grouping rule here.
 
 An alternative retention design can keep P reachable through a permanent
 immutable ref, but that requires an explicit maintenance decision and suitable
@@ -113,10 +128,13 @@ as well as both reusable wrapper payload pins.
 
 ## Upgrade dependencies and consumers
 
-Use Dependabot or Renovate to propose dependency and action-pin updates, and
-review the corresponding upstream changes. Do not let an automated dependency
+This repository uses [Dependabot](.github/dependabot.yml) to propose dependency
+and action-pin updates. Retain full SHAs with matching exact release-tag
+comments on external dependencies, except the internal P pins described above.
+Review the corresponding upstream changes; do not let an automated dependency
 bump silently alter the compatibility contract. Update comments or
-documentation that name versions when their pins change.
+documentation that name versions when their pins change. Changes to dependencies
+inside public Action metadata still require the two-commit payload protocol.
 
 The development-only [Go tools module](tools/go.mod) owns actionlint and its
 dependency graph. Dependabot checks `/tools` weekly, including indirect
@@ -132,8 +150,12 @@ Dependabot proposes dependency updates; it does not eliminate tool maintenance.
 Keep the module's Go version supported, review new lint findings, and resolve
 build incompatibilities before merging an update.
 
-Consumers upgrade both workflow references and any prepare/finalize Action
-references together in a reviewed pull request. Keep the documentation at the
+Consumers follow [upgrading toolkit pins](docs/upgrading.md), including the
+Dependabot group that matches both reusable workflow and Action dependency
+paths. They upgrade both workflow references and any prepare/finalize
+Action references, matching tag comments, and SHA-pinned Markdown links together
+in a reviewed pull request. Dependabot's GitHub Actions support does not update
+those Markdown links. Keep the documentation at the
 upgrade commit consistent with the wrappers, Actions, and payload. Refresh
 existing drafts with a successful updated drafting run before tag publication;
 preparation metadata is required. No PyPI release or installer publication is
