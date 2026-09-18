@@ -27,11 +27,14 @@ steps. Pre-draft readiness alone is not a publication gate; publication has
    pushed tag, run your own release steps, and publish the prepared GitHub Release.
 
 Installation examples contain
-`@REPLACE_WITH_REVIEWED_COMMIT_SHA`. This is an installation placeholder,
-**not a usable workflow reference**.
-Replace it in both callers and any publication Action references with the same
-reviewed, reachable, full commit SHA from this repository. No floating branch,
-tag, or second tooling ref is required.
+`@REPLACE_WITH_REVIEWED_COMMIT_SHA # vMAJOR.MINOR.PATCH`. Both the SHA and
+comment are placeholders, **not a usable workflow reference**.
+Replace them in both callers and any publication Action references with the
+same reviewed full release commit SHA and its matching stable tag. The SHA
+remains the executable ref; the comment identifies the reviewed release.
+See [upgrading toolkit pins](docs/upgrading.md) for tag verification, grouped
+Dependabot updates, synchronized documentation links, and unreleased-commit exceptions.
+No floating branch, tag ref, or second tooling ref is required.
 
 ## How it works
 
@@ -89,6 +92,7 @@ installer to deploy.
 | --- | --- |
 | [Documentation index](docs/README.md) | Find the guide for your role |
 | [Installation](docs/installation.md) | Install pinned caller workflows |
+| [Upgrading toolkit pins](docs/upgrading.md) | Verify release pins and review grouped dependency updates |
 | [Author guide](docs/author-guide.md) | Label changes and write migration fragments |
 | [Fragment template](docs/fragment-template.md) | Copy a complete example and adapt it |
 | [Consumer maintainer guide](docs/maintainer-guide.md) | Review guides, rerun safely, and prepare publication |

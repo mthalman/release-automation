@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     labels: [dependencies, "semver:patch"]
+    # Internal payload P must follow the two-commit protocol in MAINTAINERS.md.
+    ignore:
+      - dependency-name: "mthalman/release-automation"
+      - dependency-name: "mthalman/release-automation/*"
   - package-ecosystem: pip
     directory: /toolkit
     schedule:

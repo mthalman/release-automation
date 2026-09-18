@@ -18,7 +18,8 @@ class WorkflowContractTests(unittest.TestCase):
         for name in ("migration-policy.yml", "release-draft.yml"):
             text = (WORKFLOWS / name).read_text(encoding="utf-8")
             match = re.search(
-                r"repository: mthalman/release-automation\n\s+ref: ([0-9a-f]{40})\n",
+                r"repository: mthalman/release-automation\n"
+                r"(?:[ \t]+#[^\n]*\n)*[ \t]+ref: ([0-9a-f]{40})\n",
                 text,
             )
             self.assertIsNotNone(match, f"{name} must pin its toolkit to a literal full SHA")
@@ -90,6 +91,29 @@ class WorkflowContractTests(unittest.TestCase):
                     self.assertRegex(target, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
         ci = (WORKFLOWS / "ci.yml").read_text(encoding="utf-8")
         self.assertNotIn("go install", ci)
+
+    def test_external_actions_have_release_comments_except_internal_payload(self):
+        for workflow in [*WORKFLOWS.glob("*.yml"), *(ROOT / "actions").glob("*/action.yml")]:
+            text = workflow.read_text(encoding="utf-8")
+            for target, comment in re.findall(r"uses:[ \t]*(\S+)([^\n]*)", text):
+                with self.subTest(file=workflow.name, target=target):
+                    if target.startswith(("./", "mthalman/release-automation/")):
+                        self.assertEqual(comment.strip(), "")
+                    else:
+                        self.assertRegex(comment, r"^ # v[0-9]+\.[0-9]+\.[0-9]+$")
+
+    def test_dependabot_does_not_update_internal_payload_actions(self):
+        dependabot = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
+        actions = dependabot.split("package-ecosystem: github-actions\n", 1)[1]
+        actions = actions.split("  - package-ecosystem:", 1)[0]
+        self.assertIn(
+            '    ignore:\n'
+            '      - dependency-name: "mthalman/release-automation"\n'
+            '      - dependency-name: "mthalman/release-automation/*"\n',
+            actions,
+        )
+        self.assertNotIn("versions:", actions)
+        self.assertNotIn("update-types:", actions)
 
     def test_actionlint_uses_dependabot_managed_tools_module(self):
         ci = (WORKFLOWS / "ci.yml").read_text(encoding="utf-8")

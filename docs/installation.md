@@ -14,14 +14,21 @@ publication is a separate, optional installation.
 
 ## 1. Select a reviewed commit
 
-Choose a reviewed, reachable, full commit SHA from
-`mthalman/release-automation` and use it in **both** callers below.
-`REPLACE_WITH_REVIEWED_COMMIT_SHA` is an installation placeholder, not a real
-ref. Replace it before committing the examples.
+Choose a reviewed, published stable release of `mthalman/release-automation`.
+Use its exact full commit SHA in **both** callers below and its matching
+`vMAJOR.MINOR.PATCH` tag in each trailing comment. Follow
+[release verification](upgrading.md#select-and-verify-a-release) first.
+`REPLACE_WITH_REVIEWED_COMMIT_SHA` and `vMAJOR.MINOR.PATCH` are placeholders,
+not a real ref or tag. Replace both before committing the examples.
 
 The selected wrapper commit already pins its toolkit payload. You do not supply
 a second tooling ref. Keep both caller refs and any optional publication Action
-refs synchronized on future upgrades.
+refs and tag comments synchronized on future upgrades. The comment does not
+replace immutable pinning; it identifies the reviewed release. Dependabot can
+update SHA-pinned references even without that comment.
+If required changes are not yet released, follow the
+[unreleased-commit exception](upgrading.md#use-an-unreleased-commit-only-as-an-explicit-exception)
+instead of attaching an older or future tag to a different SHA.
 
 ## 2. Enable repository permissions
 
@@ -62,7 +69,7 @@ role. Category titles can also be overridden through `categories`. See the
 ## 4. Add the policy caller
 
 Save this as `.github/workflows/migration-policy.yml` in the consuming
-repository, replacing the ref:
+repository, replacing the ref and tag comment:
 
 ```yaml
 name: Migration policy
@@ -76,7 +83,7 @@ permissions:
 
 jobs:
   migration-policy:
-    uses: mthalman/release-automation/.github/workflows/migration-policy.yml@REPLACE_WITH_REVIEWED_COMMIT_SHA
+    uses: mthalman/release-automation/.github/workflows/migration-policy.yml@REPLACE_WITH_REVIEWED_COMMIT_SHA # vMAJOR.MINOR.PATCH
 ```
 
 Keep `pull_request_target` and its event types. Do not add PR checkout, PR code
@@ -89,8 +96,9 @@ which pull requests should receive a required check.
 
 ## 5. Add the draft caller
 
-Save this as `.github/workflows/release-draft.yml`. Replace both the ref and
-`main` if your repository's default branch has another name:
+Save this as `.github/workflows/release-draft.yml`. Replace the ref and tag
+comment with your verified SHA/tag pair. If your default branch is not named
+`main`, also replace `main` with its actual name:
 
 ```yaml
 name: Release draft
@@ -106,7 +114,7 @@ permissions:
 
 jobs:
   release-draft:
-    uses: mthalman/release-automation/.github/workflows/release-draft.yml@REPLACE_WITH_REVIEWED_COMMIT_SHA
+    uses: mthalman/release-automation/.github/workflows/release-draft.yml@REPLACE_WITH_REVIEWED_COMMIT_SHA # vMAJOR.MINOR.PATCH
 ```
 
 Do not add the reusable workflow's concurrency group to this caller. The callee
@@ -179,7 +187,8 @@ The examples alone are not evidence of live workflow validation.
 Follow [tag publishing](tag-publishing.md) to add a separate tag-push workflow.
 It calls `actions/prepare-release`, runs your arbitrary `uses` and `run` steps,
 then calls `actions/finalize-release` only after those steps succeed. Pin both
-Actions to the same reviewed full SHA as the reusable workflows.
+Actions to the same reviewed full SHA as the reusable workflows, with the same
+matching stable-tag comments.
 
 Set `group: release-drafter`, `cancel-in-progress: false`, and `queue: max`
 on your tag workflow. The reusable draft workflow at this revision already

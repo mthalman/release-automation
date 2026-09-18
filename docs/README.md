@@ -10,6 +10,7 @@ the implementation you use.
 2. [Label pull requests and write fragments](author-guide.md).
 3. [Review generated guides and prepare releases](maintainer-guide.md).
 4. Optionally [publish from a tag with consumer-owned steps](tag-publishing.md).
+5. [Upgrade toolkit pins and documentation links together](upgrading.md).
 
 ## Look up details
 
