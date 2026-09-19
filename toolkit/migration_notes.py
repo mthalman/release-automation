@@ -40,6 +40,13 @@ def changed_files(repo: Path, base: str, head: str, directory: str = FRAGMENTS) 
     return list(zip(entries[0:-1:2], entries[1:-1:2]))
 
 
+def opening_fence(line: str) -> str:
+    opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
+    if opening and (opening[1][0] == "~" or "`" not in opening[2]):
+        return opening[1]
+    return ""
+
+
 def markdown_lines(
     text: str, *, include_fenced: bool = True, hide_comments: bool = False,
     validate_format: bool = False,
@@ -58,9 +65,9 @@ def markdown_lines(
             if include_fenced:
                 yield raw_line, None
             continue
-        opening = None if in_comment else re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
-        if opening and (opening[1][0] == "~" or "`" not in opening[2]):
-            fence = opening[1]
+        opening = "" if in_comment else opening_fence(line)
+        if opening:
+            fence = opening
             if include_fenced:
                 yield raw_line, None
             continue
@@ -203,6 +210,38 @@ def validate_fragment(name: str, text: str, config: Config = DEFAULT) -> None:
                 f"{name}: migration fragment body headings must be level four or deeper; "
                 "only the opening title may be level three."
             )
+    introduction = []
+    for line_number, (line, heading) in enumerate(markdown_lines(text, hide_comments=True)):
+        if line_number == 0:
+            continue
+        if heading or (introduction and not line.strip()):
+            break
+        if not line.strip():
+            continue
+        expanded = line.expandtabs(4).rstrip("\r\n")
+        if expanded.startswith("    "):
+            if not introduction:
+                break
+        elif re.fullmatch(r" {0,3}(?:=+|-+)[ \t]*", expanded):
+            introduction.clear()
+            break
+        elif opening_fence(expanded) or re.match(
+            r" {0,3}(?:>|[-+*](?:[ \t]|$)|[0-9]+[.)][ \t]|"
+            r"(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|"
+            r"\[[^\]]+\]:|\*\*Version introduced:\*\*)",
+            expanded,
+        ):
+            break
+        introduction.append(line)
+    content = "".join(introduction).strip().strip("*_`").strip()
+    if (
+        not content
+        or content.upper().rstrip(".") in ("TODO", "TBD", "N/A")
+    ):
+        raise ValueError(
+            f"{name}: migration fragment needs a completed introductory paragraph "
+            "briefly describing the breaking change after the title and before any sections."
+        )
 
 
 def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
@@ -242,6 +281,10 @@ def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
     original_topic = "".join(text.splitlines(keepends=True)[start:])
     if MIGRATION_START in original_topic or MIGRATION_END in original_topic or TOPIC_MARKER_PREFIX in original_topic:
         raise ValueError(f"{name}: migration fragment contains a reserved release-note marker.")
+    topic = re.sub(
+        rf"\A(### [^\n]+\n[ \t\n]*)\*\*Version introduced:\*\* {re.escape(path[1])}\n",
+        r"\1", topic, count=1,
+    )
     validate_fragment(f"{config.fragment_root}/+{path[2]}.breaking.md", topic, config)
 
 

@@ -76,7 +76,8 @@ Configuration and pending-state deletion authority come from the exact PR
 base Git objects. A PR cannot weaken its own checks by changing its proposed
 configuration or mark a published guide pending to authorize its deletion.
 
-The validator checks fragment naming and section content, new-fragment
+The validator checks fragment naming, a completed introductory paragraph
+briefly describing each breaking change, section content, new-fragment
 requirements for major PRs, the major/skip conflict, guide structure, and
 retention rules. These checks do not enforce every label convention or replace
 consumer product tests.

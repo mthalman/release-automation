@@ -21,6 +21,9 @@ REQUIRED_HEADINGS = (
 )
 NOTE = """### Document parsing errors
 
+Malformed document JSON now throws `InvalidOperationException` instead of
+`JsonException`, so callers must update their exception handling.
+
 #### Previous behavior
 
 Malformed document JSON threw `JsonException`.
@@ -131,6 +134,11 @@ class MigrationFormatTests(unittest.TestCase):
         )
         template = document.split("```markdown\n", 1)[1].split("\n```", 1)[0]
         self.assertEqual(template, NOTE.rstrip())
+        validate_fragment(".changes/+example.breaking.md", template + "\n")
+
+    def test_documented_fragment_template_follows_format(self):
+        document = (ROOT / "docs" / "fragment-template.md").read_text(encoding="utf-8")
+        template = document.split("````markdown\n", 1)[1].split("\n````", 1)[0]
         validate_fragment(".changes/+example.breaking.md", template + "\n")
 
 
@@ -1101,9 +1109,10 @@ class MigrationGuideTests(unittest.TestCase):
 
     def test_topic_introduction_is_preserved_without_repeating_title(self):
         introduction = "This change affects applications that parse JSON documents."
-        notes = self.notes(NOTE.replace(
-            "### Document parsing errors\n", f"### Document parsing errors\n\n{introduction}\n"
-        ))
+        _, sections = NOTE.split("#### Previous behavior", 1)
+        notes = self.notes(
+            f"### Document parsing errors\n\n{introduction}\n\n#### Previous behavior" + sections
+        )
         topic = guide_documents(notes, "v3.0.0")["document-parsing-errors.md"]
         self.assertIn(f"**Version introduced:** 3.0.0\n\n{introduction}\n\n## Previous behavior", topic)
         self.assertEqual(topic.count("Document parsing errors"), 1)
