@@ -42,7 +42,7 @@ jobs:
         with:
           repository: mthalman/release-automation
           # Internal payload P; update only through the MAINTAINERS.md protocol.
-          ref: 86f09261a472f264005d7ba94c2733b96a4215b6
+          ref: 88929fb874e8829a523fbb3f8d948d51dabf8afd
           path: _release-automation
           persist-credentials: false
 
