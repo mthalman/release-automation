@@ -23,7 +23,7 @@ jobs:
       - name: Prepare tagged release
         id: prepare
         # Internal payload P, not a public release; keep both Actions and wrappers in sync.
-        uses: mthalman/release-automation/actions/prepare-release@4c31eb4207e44c55bef1a363081700fdcf67c07f
+        uses: mthalman/release-automation/actions/prepare-release@16f43343bb639a2f1ab589b654944794568e2895
 
       - name: Checkout the validated source
         if: steps.prepare.outputs.already-published != 'true'
@@ -45,6 +45,6 @@ jobs:
       - name: Publish prepared GitHub release
         if: success()
         # Internal payload P; update only through the MAINTAINERS.md protocol.
-        uses: mthalman/release-automation/actions/finalize-release@4c31eb4207e44c55bef1a363081700fdcf67c07f
+        uses: mthalman/release-automation/actions/finalize-release@16f43343bb639a2f1ab589b654944794568e2895
         with:
           context: ${{ steps.prepare.outputs.context }}
