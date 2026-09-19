@@ -113,7 +113,8 @@ try {
       write(path.join(directory, '.github', 'release-drafter.json'), hostile);
       write(path.join(consumer, 'source.txt'), 'Synthetic source\n');
       const base = commit();
-      const note = '### Changed API\n\n' + [
+      const note = '### Changed API\n\n' +
+        'The synthetic API now requires callers to handle the updated contract explicitly.\n\n' + [
         'Previous behavior', 'New behavior', 'Type of breaking change',
         'Reason for change', 'Recommended action', 'Affected APIs',
       ].map((heading) => `#### ${heading}\n\nConcrete synthetic API behavior.\n\n`).join('');
