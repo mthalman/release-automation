@@ -104,8 +104,9 @@ behavior; they do not replace human review or add a new executable policy check.
    `.changes/+explicit-owner-option.breaking.md`.
 2. Copy the example in the [fragment template](fragment-template.md), then
    replace its prose and code with the actual change.
-3. Start with one H3 (`###`) title and include these meaningful H4 (`####`)
-   sections in exactly this order:
+3. Start with one H3 (`###`) title, followed by a brief introductory paragraph
+   describing the breaking change and who or what it affects. Then include
+   these meaningful H4 (`####`) sections in exactly this order:
 
    1. Previous behavior
    2. New behavior
@@ -136,9 +137,12 @@ migration step. Name the affected APIs, commands, or configuration settings.
 If there is no API change, explain which user-facing behavior is affected
 instead of writing only `N/A`.
 
-Every required section needs real content. Empty sections, comment-only
-sections, and placeholder-only values such as `TODO`, `TBD`, or `N/A` are
-invalid. Titles, required headings, and their instructions must be visible:
+The introduction and every required section need real content. Empty,
+comment-only, and placeholder-only values such as `TODO`, `TBD`, or `N/A` are
+invalid. The introduction must be prose before any body heading, not a list,
+blockquote, code block, or version metadata. Keep it brief; validation checks
+structure and placeholders, not writing quality or a word limit.
+Titles, required headings, and their instructions must be visible:
 HTML comments cannot supply them, even when a comment spans multiple sections.
 Literal HTML-comment examples inside single-line inline code spans or fenced
 code blocks remain unchanged.

@@ -57,6 +57,15 @@ is an ancestor. Do not change `@<full SHA>` to `@v1`, `@main`, or `@v1.2.3`.
 
 ## Review and synchronize the upgrade
 
+Before adopting a revision that requires introductory paragraphs, add a brief
+description of each breaking change after the title in retained fragments.
+Update retained migration topics through reviewed corrections, placing the
+introduction after the version metadata and before the detailed sections.
+Preserve published guide paths and existing guidance; do not regenerate or
+delete published history. Existing documents without introductions fail
+validation, including retained topics checked during draft planning.
+See the [fragment template](fragment-template.md) for the required format.
+
 1. Verify the proposed tag-to-SHA mapping using the commands above. Review the
    release notes and the diff from your old SHA to the new SHA. A digest-only
    change under an unchanged tag needs investigation, not automatic acceptance.

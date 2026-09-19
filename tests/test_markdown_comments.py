@@ -13,11 +13,12 @@ from migration_notes import (
 
 
 TITLE = "### Timeout changes\n\n"
+INTRODUCTION = "Requests now time out instead of waiting indefinitely.\n\n"
 SECTIONS = "".join(
     f"#### {heading}\n\nCompleted {heading.lower()} guidance.\n\n"
     for heading in REQUIRED_SECTIONS
 )
-FRAGMENT = TITLE + SECTIONS
+FRAGMENT = TITLE + INTRODUCTION + SECTIONS
 FRAGMENT_PATH = ".changes/+timeout.breaking.md"
 GUIDE_PATH = "docs/migrations/2.0.0/timeout.md"
 METADATA = "**Version introduced:** 2.0.0\n\n"
@@ -41,6 +42,41 @@ class MarkdownCommentTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 with self.assertRaisesRegex(ValueError, error):
                     validate(text)
+
+    def test_introduction_requires_a_completed_paragraph(self):
+        for introduction in (
+            "", "TODO", "TBD.", "N/A", "<!-- Briefly describe the change. -->",
+            "**TODO**", "_TBD._", "`N/A`",
+            "<!--\nRequests now time out.\n-->", "TO<!-- hidden -->DO",
+            "```text\nRequests now time out.\n```",
+            "~~~text\nRequests now time out.\n~~~",
+            "    Requests now time out.", "\tRequests now time out.",
+            "- Requests now time out.", "1. Requests now time out.",
+            "> Requests now time out.", "---", "***", "___",
+            "#### Summary\n\nRequests now time out.",
+            "Requests now time out.\n===",
+            "[summary]: https://example.com/timeout",
+            "**Version introduced:** 2.0.0",
+        ):
+            for newline in ("\n", "\r\n"):
+                with self.subTest(introduction=introduction, newline=newline):
+                    for kind, text, validate in documents(TITLE + introduction + "\n\n" + SECTIONS):
+                        with self.subTest(kind=kind):
+                            with self.assertRaisesRegex(ValueError, "introductory paragraph|Version introduced"):
+                                validate(text.replace("\n", newline))
+
+    def test_introduction_supports_wrapped_prose_and_inline_markdown(self):
+        for introduction in (
+            "Requests now time out instead of\nwaiting indefinitely.",
+            "***Requests*** now time out instead of waiting indefinitely.",
+            "<!-- Context -->Requests now **time out** instead of waiting.",
+            "The `timeout` option is now required; see <https://example.com/timeout>.",
+            "The `<!-- timeout -->` setting is no longer recognized.",
+        ):
+            with self.subTest(introduction=introduction):
+                for kind, text, validate in documents(TITLE + introduction + "\n\n" + SECTIONS):
+                    with self.subTest(kind=kind):
+                        validate(text)
 
     def test_comment_wrapping_all_required_sections_is_rejected(self):
         self.assert_invalid_documents(TITLE + "<!--\n" + SECTIONS + "-->\n", "Previous behavior")
@@ -133,14 +169,14 @@ class MarkdownCommentTests(unittest.TestCase):
 
     def test_commented_legacy_preamble_does_not_hide_valid_standalone_topic(self):
         preamble = "<!--\n## Breaking changes and migration\n### Fake topic\n-->\n"
-        guide = "# Timeout\n\n" + METADATA + SECTIONS.replace("#### ", "## ")
+        guide = "# Timeout\n\n" + METADATA + INTRODUCTION + SECTIONS.replace("#### ", "## ")
         validate_guide(GUIDE_PATH, preamble + guide)
 
     def test_fence_looking_lines_inside_comments_do_not_open_fences(self):
         for fence in ("```", "~~~~", "   ````"):
             comment = f"<!--\n{fence}markdown\n# Hidden title\n-->\n"
             with self.subTest(fence=fence):
-                for kind, text, validate in documents(TITLE + comment + SECTIONS):
+                for kind, text, validate in documents(TITLE + comment + INTRODUCTION + SECTIONS):
                     with self.subTest(kind=kind):
                         validate(text)
 
@@ -429,7 +465,7 @@ class GuideCommentMetadataTests(unittest.TestCase):
     def test_commented_fence_does_not_hide_visible_metadata(self):
         guide = (
             "<!--\n```markdown\n-->\n# Timeout\n\n" + METADATA
-            + SECTIONS.replace("#### ", "## ")
+            + INTRODUCTION + SECTIONS.replace("#### ", "## ")
         )
         validate_guide(GUIDE_PATH, guide)
 

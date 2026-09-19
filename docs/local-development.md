@@ -106,7 +106,9 @@ needed. The suite includes
 [an upstream baseline comparison](../tests/test_baseline.py) against
 [output captured from the actual upstream implementation](../tests/fixtures/pr108-output.json).
 It checks exact rendered notes, generated documents and state, indexes, and the
-unified release body, including a fenced literal `$OWNER` example.
+unified release body, including a fenced literal `$OWNER` example. The test adds
+the now-required introduction to the expected notes and topic; the captured
+upstream fixture remains unchanged.
 
 The [policy and metadata tests](../tests/test_review_regressions.py) cover
 canonical guide metadata, supported previous-release boundaries, and

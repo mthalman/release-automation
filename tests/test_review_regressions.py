@@ -10,7 +10,10 @@ from configuration import Config, Labels
 from migration_notes import REQUIRED_SECTIONS, check_pr, previous_tag, validate_guide
 
 
-GUIDE = "# Timeout\n\n**Version introduced:** 2.0.0\n\n" + "".join(
+GUIDE = (
+    "# Timeout\n\n**Version introduced:** 2.0.0\n\n"
+    "Requests now time out instead of waiting indefinitely.\n\n"
+) + "".join(
     f"## {section}\n\nMeaningful {section.lower()} guidance.\n\n"
     for section in REQUIRED_SECTIONS
 )

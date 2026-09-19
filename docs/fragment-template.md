@@ -2,11 +2,15 @@
 
 Copy only the Markdown inside the outer fence into
 `.changes/+explicit-owner-option.breaking.md`, or another descriptive unused
-slug. Replace the example with the real change. Keep the opening H3 and all six
-H4 section names in this order; each section needs meaningful content.
+slug. Replace the example with the real change. Keep the opening H3, a brief
+introductory paragraph describing the breaking change, and all six H4 section
+names in this order. The introduction and each section need meaningful content.
 
 ````markdown
 ### Require an explicit owner for repository lookups
+
+The `lookup` command no longer defaults to the current user's account. Scripts
+and interactive invocations must now specify the repository owner explicitly.
 
 #### Previous behavior
 

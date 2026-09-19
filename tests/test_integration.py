@@ -20,6 +20,8 @@ from release_metadata import MARKER, preparation
 
 NOTE = """### Client timeout contract
 
+Client requests now fail after a timeout instead of waiting indefinitely.
+
 #### Previous behavior
 
 Requests waited indefinitely.

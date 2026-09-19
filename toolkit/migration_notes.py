@@ -203,6 +203,30 @@ def validate_fragment(name: str, text: str, config: Config = DEFAULT) -> None:
                 f"{name}: migration fragment body headings must be level four or deeper; "
                 "only the opening title may be level three."
             )
+    introduction = []
+    for line_number, (line, heading) in enumerate(markdown_lines(text, hide_comments=True)):
+        if line_number == 0:
+            continue
+        if heading or (introduction and not line.strip()):
+            break
+        if line.strip():
+            introduction.append(line)
+    content = "".join(introduction).strip().strip("*_`").strip()
+    if (
+        not content
+        or content.upper().rstrip(".") in ("TODO", "TBD", "N/A")
+        or any(re.match(
+            r"(?: {4}|\t)| {0,3}(?:"
+            r"`{3,}|~{3,}|>|[-+*](?:[ \t]|$)|[0-9]+[.)][ \t]|"
+            r"(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|[-=]+[ \t]*$|"
+            r"\[[^\]]+\]:|\*\*Version introduced:\*\*)",
+            line.rstrip("\r\n"),
+        ) for line in introduction)
+    ):
+        raise ValueError(
+            f"{name}: migration fragment needs a completed introductory paragraph "
+            "briefly describing the breaking change after the title and before any sections."
+        )
 
 
 def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
@@ -242,6 +266,10 @@ def validate_guide(name: str, text: str, config: Config = DEFAULT) -> None:
     original_topic = "".join(text.splitlines(keepends=True)[start:])
     if MIGRATION_START in original_topic or MIGRATION_END in original_topic or TOPIC_MARKER_PREFIX in original_topic:
         raise ValueError(f"{name}: migration fragment contains a reserved release-note marker.")
+    topic = re.sub(
+        rf"\A(### [^\n]+\n[ \t\n]*)\*\*Version introduced:\*\* {re.escape(path[1])}\n",
+        r"\1", topic, count=1,
+    )
     validate_fragment(f"{config.fragment_root}/+{path[2]}.breaking.md", topic, config)
 
 
