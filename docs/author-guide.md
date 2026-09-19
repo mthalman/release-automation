@@ -104,9 +104,10 @@ behavior; they do not replace human review or add a new executable policy check.
    `.changes/+explicit-owner-option.breaking.md`.
 2. Copy the example in the [fragment template](fragment-template.md), then
    replace its prose and code with the actual change.
-3. Start with one H3 (`###`) title, followed by a brief introductory paragraph
-   describing the breaking change and who or what it affects. Then include
-   these meaningful H4 (`####`) sections in exactly this order:
+3. Start with one H3 (`###`) title.
+4. Add a brief introductory paragraph describing the breaking change and who
+   or what it affects.
+5. Include these meaningful H4 (`####`) sections in exactly this order:
 
    1. Previous behavior
    2. New behavior
@@ -115,7 +116,7 @@ behavior; they do not replace human review or add a new executable policy check.
    5. Recommended action
    6. Affected APIs
 
-4. Add the configured major label and request review.
+6. Add the configured major label and request review.
 
 The filename uses lowercase ASCII letters, digits, and single hyphen-separated
 words. The leading `+` and `.breaking.md` suffix are required. Do not use the
