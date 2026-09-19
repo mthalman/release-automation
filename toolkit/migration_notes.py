@@ -40,6 +40,13 @@ def changed_files(repo: Path, base: str, head: str, directory: str = FRAGMENTS) 
     return list(zip(entries[0:-1:2], entries[1:-1:2]))
 
 
+def opening_fence(line: str) -> str:
+    opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
+    if opening and (opening[1][0] == "~" or "`" not in opening[2]):
+        return opening[1]
+    return ""
+
+
 def markdown_lines(
     text: str, *, include_fenced: bool = True, hide_comments: bool = False,
     validate_format: bool = False,
@@ -58,9 +65,9 @@ def markdown_lines(
             if include_fenced:
                 yield raw_line, None
             continue
-        opening = None if in_comment else re.match(r" {0,3}(`{3,}|~{3,})(.*)$", line)
-        if opening and (opening[1][0] == "~" or "`" not in opening[2]):
-            fence = opening[1]
+        opening = "" if in_comment else opening_fence(line)
+        if opening:
+            fence = opening
             if include_fenced:
                 yield raw_line, None
             continue
@@ -209,19 +216,27 @@ def validate_fragment(name: str, text: str, config: Config = DEFAULT) -> None:
             continue
         if heading or (introduction and not line.strip()):
             break
-        if line.strip():
-            introduction.append(line)
+        if not line.strip():
+            continue
+        expanded = line.expandtabs(4).rstrip("\r\n")
+        if expanded.startswith("    "):
+            if not introduction:
+                break
+        elif re.fullmatch(r" {0,3}(?:=+|-+)[ \t]*", expanded):
+            introduction.clear()
+            break
+        elif opening_fence(expanded) or re.match(
+            r" {0,3}(?:>|[-+*](?:[ \t]|$)|[0-9]+[.)][ \t]|"
+            r"(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|"
+            r"\[[^\]]+\]:|\*\*Version introduced:\*\*)",
+            expanded,
+        ):
+            break
+        introduction.append(line)
     content = "".join(introduction).strip().strip("*_`").strip()
     if (
         not content
         or content.upper().rstrip(".") in ("TODO", "TBD", "N/A")
-        or any(re.match(
-            r"(?: {4}|\t)| {0,3}(?:"
-            r"`{3,}|~{3,}|>|[-+*](?:[ \t]|$)|[0-9]+[.)][ \t]|"
-            r"(?:\*[ \t]*){3,}$|(?:_[ \t]*){3,}$|[-=]+[ \t]*$|"
-            r"\[[^\]]+\]:|\*\*Version introduced:\*\*)",
-            line.rstrip("\r\n"),
-        ) for line in introduction)
     ):
         raise ValueError(
             f"{name}: migration fragment needs a completed introductory paragraph "

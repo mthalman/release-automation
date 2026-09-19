@@ -142,6 +142,10 @@ comment-only, and placeholder-only values such as `TODO`, `TBD`, or `N/A` are
 invalid. The introduction must be prose before any body heading, not a list,
 blockquote, code block, or version metadata. Keep it brief; validation checks
 structure and placeholders, not writing quality or a word limit.
+Wrapped prose may indent continuation lines and use single-line inline code
+spans. A following fenced example or list ends the paragraph without needing a
+blank line. Indenting the first line by four columns, including mixed spaces
+and tabs, instead creates a code block and cannot supply the introduction.
 Titles, required headings, and their instructions must be visible:
 HTML comments cannot supply them, even when a comment spans multiple sections.
 Literal HTML-comment examples inside single-line inline code spans or fenced
